@@ -93,8 +93,8 @@ INSERT INTO categories (name, icon, description) VALUES
 -- Seed Default Admin User (Password: admin123, hashed using PHP password_hash PASSWORD_BCRYPT)
 -- $2y$10$wE0v7x6o2q0z4fD5jG.3ceN1s3Zl0UuW7d6QyEaN.a.F5H9Z8zB0m corresponds to 'admin123'
 INSERT INTO users (name, email, password_hash, phone, role) VALUES
-('Campus Admin', 'admin@campus.edu', '$2y$10$8sB3eKz0i7gP6xWcO0y9meZtZ1k4QvDqR/5iJ7bB3r6g4Vv7o6qYy', '+1-555-0199', 'admin'),
-('Demo Student', 'student@campus.edu', '$2y$10$8sB3eKz0i7gP6xWcO0y9meZtZ1k4QvDqR/5iJ7bB3r6g4Vv7o6qYy', '+1-555-0144', 'user');
+('Campus Admin', 'admin@campus.edu', '$2y$10$dYGYce77NupaLTYM55BwO.5Tl8I52m8uKH.1pYfg1oajPgQOX82/W', '+1-555-0199', 'admin'),
+('Demo Student', 'student@campus.edu', '$2y$10$dYGYce77NupaLTYM55BwO.5Tl8I52m8uKH.1pYfg1oajPgQOX82/W', '+1-555-0144', 'user');
 
 -- Seed Sample Items
 INSERT INTO items (item_type, title, category_id, location, event_date, description, status, contact_name, contact_email, contact_phone) VALUES
