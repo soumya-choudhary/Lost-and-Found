@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/repositories/ClaimRepository.php';
+require_once __DIR__ . '/../app/repositories/ItemRepository.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -25,6 +26,24 @@ if (empty($proof) || strlen($proof) < 10) $errors[] = 'Please provide detailed p
 
 if (!empty($errors)) {
     echo json_encode(['success' => false, 'message' => implode(' ', $errors)]);
+    exit;
+}
+
+$itemRepo = new ItemRepository();
+$item = $itemRepo->findById($itemId);
+if (!$item) {
+    echo json_encode(['success' => false, 'message' => 'Item not found.']);
+    exit;
+}
+
+// Prevent item owner/reporter from filing a claim on their own reported item
+$currentUser = currentUser();
+$isReporter = ($currentUser && !empty($item['user_id']) && (int)$item['user_id'] === (int)$currentUser['id']) ||
+              (strtolower(trim($email)) === strtolower(trim($item['contact_email']))) ||
+              ($currentUser && strtolower(trim($currentUser['email'])) === strtolower(trim($item['contact_email'])));
+
+if ($isReporter) {
+    echo json_encode(['success' => false, 'message' => 'You cannot submit an ownership claim on an item you reported.']);
     exit;
 }
 

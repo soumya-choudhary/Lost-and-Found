@@ -122,7 +122,13 @@ require_once __DIR__ . '/layouts/header.php';
 
                     <!-- Action buttons -->
                     <div class="d-grid gap-2">
-                        <?php if ($item['status'] !== 'Resolved'): ?>
+                        <?php if ($isReporter): ?>
+                            <!-- Reporter / Owner of this item -->
+                            <div class="alert alert-primary-subtle text-primary border border-primary-subtle rounded-4 py-2 px-3 text-center small mb-0 fw-semibold">
+                                <i class="fa-solid fa-circle-check me-1"></i> You reported this item
+                                <div class="text-secondary fw-normal small mt-1">Review received ownership claims in the section below.</div>
+                            </div>
+                        <?php elseif ($item['status'] !== 'Resolved'): ?>
                             <button type="button" class="btn btn-warning btn-lg rounded-pill fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#claimModal">
                                 <i class="fa-solid fa-hand-holding-hand me-2"></i> Submit Ownership Claim
                             </button>
@@ -291,7 +297,8 @@ require_once __DIR__ . '/layouts/header.php';
     </div>
 </div>
 
-<!-- Claim Submission Modal -->
+<?php if (!$isReporter): ?>
+<!-- Claim Submission Modal (Only for non-owners) -->
 <div class="modal fade" id="claimModal" tabindex="-1" aria-labelledby="claimModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -352,6 +359,7 @@ require_once __DIR__ . '/layouts/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php 
 $extraScripts = '<script src="' . url('public/assets/js/items.js') . '"></script>';
