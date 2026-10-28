@@ -3,11 +3,24 @@
 
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../app/repositories/ItemRepository.php';
+require_once __DIR__ . '/../app/repositories/ClaimRepository.php';
 
 AuthMiddleware::check();
 
 $currentUser = currentUser();
 $pageTitle = 'Student Dashboard';
+
+$itemRepo = new ItemRepository();
+$userItems = $itemRepo->getByUserId($currentUser['id']);
+
+$claimRepo = new ClaimRepository();
+$userClaims = $claimRepo->getByUserEmail($currentUser['email']);
+
+$totalReported = count($userItems);
+$totalClaims   = count($userClaims);
+$resolvedItems = count(array_filter($userItems, fn($i) => $i['status'] === 'Resolved'));
+
 require_once __DIR__ . '/../layouts/header.php';
 ?>
 
@@ -43,19 +56,22 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 
-    <!-- Quick Action Cards -->
-    <div class="row g-4">
+    <!-- Personal Stats Cards -->
+    <div class="row g-4 mb-4">
         <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
                 <div class="card-body">
-                    <div class="text-primary fs-3 mb-3">
-                        <i class="fa-solid fa-bullhorn"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="text-primary fs-3">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <span class="badge bg-primary fs-5 px-3 py-1 rounded-pill"><?= $totalReported ?></span>
                     </div>
-                    <h5 class="card-title fw-bold">Report Lost Belonging</h5>
+                    <h5 class="card-title fw-bold">My Reported Items</h5>
                     <p class="card-text text-muted small">
-                        Lost something on campus? File a report with photos, location, and details so the campus community can help locate it.
+                        Track the status of belongings you reported as lost or found on campus premises.
                     </p>
-                    <a href="<?= url('report-item.php?type=lost') ?>" class="btn btn-sm btn-outline-primary rounded-pill">Report Lost &rarr;</a>
+                    <a href="<?= url('student/my-reports.php') ?>" class="btn btn-sm btn-outline-primary rounded-pill">Manage Reports &rarr;</a>
                 </div>
             </div>
         </div>
@@ -63,34 +79,71 @@ require_once __DIR__ . '/../layouts/header.php';
         <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
                 <div class="card-body">
-                    <div class="text-success fs-3 mb-3">
-                        <i class="fa-solid fa-hand-holding-heart"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="text-warning fs-3">
+                            <i class="fa-solid fa-hand-holding-hand"></i>
+                        </div>
+                        <span class="badge bg-warning text-dark fs-5 px-3 py-1 rounded-pill"><?= $totalClaims ?></span>
                     </div>
-                    <h5 class="card-title fw-bold">Report Found Item</h5>
+                    <h5 class="card-title fw-bold">My Submitted Claims</h5>
                     <p class="card-text text-muted small">
-                        Found an unattended phone, calculator, or keys? Report it here so the rightful owner can verify and claim it.
-                    </p>
-                    <a href="<?= url('report-item.php?type=found') ?>" class="btn btn-sm btn-outline-success rounded-pill">Report Found &rarr;</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="card-body">
-                    <div class="text-warning fs-3 mb-3">
-                        <i class="fa-solid fa-clipboard-check"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Track Your Claims</h5>
-                    <p class="card-text text-muted small">
-                        Review the real-time status of your ownership verification requests and administrator approvals.
+                        Check review decisions and updates on ownership claims you submitted.
                     </p>
                     <a href="<?= url('student/my-claims.php') ?>" class="btn btn-sm btn-outline-warning rounded-pill">View My Claims &rarr;</a>
                 </div>
             </div>
         </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="text-success fs-3">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <span class="badge bg-success fs-5 px-3 py-1 rounded-pill"><?= $resolvedItems ?></span>
+                    </div>
+                    <h5 class="card-title fw-bold">Items Reunited</h5>
+                    <p class="card-text text-muted small">
+                        Your reported belongings that have been successfully resolved and claimed.
+                    </p>
+                    <a href="<?= url('student/my-reports.php') ?>" class="btn btn-sm btn-outline-success rounded-pill">View Resolved &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports Preview -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Recent Items You Reported</h5>
+            <a href="<?= url('student/my-reports.php') ?>" class="small text-primary text-decoration-none fw-semibold">View All</a>
+        </div>
+        
+        <?php if (empty($userItems)): ?>
+            <div class="text-center py-4 text-muted small">
+                You haven't reported any items yet. Found or lost something?
+                <a href="<?= url('report-item.php') ?>" class="text-primary fw-semibold ms-1">Report here</a>.
+            </div>
+        <?php else: ?>
+            <div class="list-group list-group-flush">
+                <?php foreach (array_slice($userItems, 0, 4) as $item): ?>
+                    <a href="<?= url('item-details.php?id=' . $item['id']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-2 border-0 border-bottom">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge <?= ($item['item_type'] === 'lost') ? 'bg-danger' : 'bg-success' ?> rounded-pill px-2 py-1">
+                                <?= strtoupper($item['item_type']) ?>
+                            </span>
+                            <div>
+                                <div class="fw-bold text-dark"><?= sanitize($item['title']) ?></div>
+                                <small class="text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i><?= sanitize($item['location']) ?> &bull; <?= date('M d, Y', strtotime($item['event_date'])) ?></small>
+                            </div>
+                        </div>
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-2"><?= sanitize($item['status']) ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
-

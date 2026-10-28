@@ -221,6 +221,14 @@ class ItemRepository {
     }
 
     /**
+     * Delete an item and its associated data
+     */
+    public function delete(int $id): bool {
+        $stmt = $this->db->prepare("DELETE FROM items WHERE id = :id");
+        return $stmt->execute(['id' => $id]);
+    }
+
+    /**
      * Audit log activity for an item
      */
     public function logActivity(int $itemId, string $action, string $details = ''): void {

@@ -67,6 +67,21 @@ class ClaimRepository {
     }
 
     /**
+     * Get claims filed by a specific user by email
+     */
+    public function getByUserEmail(string $email): array {
+        $sql = "SELECT c.*, i.title AS item_title, i.item_type, i.location, i.status AS item_status, i.image_url
+                FROM claims c
+                JOIN items i ON c.item_id = i.id
+                WHERE LOWER(c.claimant_email) = LOWER(:email)
+                ORDER BY c.created_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['email' => trim($email)]);
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Get all claims for admin review
      */
     public function getAll(int $limit = 100): array {
