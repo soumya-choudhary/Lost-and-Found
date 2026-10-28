@@ -107,11 +107,11 @@ require_once __DIR__ . '/../layouts/header.php';
                                 </td>
                                 <td>
                                     <?php if ($item['total_claims'] > 0): ?>
-                                        <span class="badge bg-warning text-dark rounded-pill px-2">
-                                            <?= $item['total_claims'] ?> claim(s)
-                                        </span>
+                                        <a href="<?= url('item-details.php?id=' . $item['id'] . '#claims-received-section') ?>" class="badge bg-warning text-dark text-decoration-none rounded-pill px-2 py-1 shadow-sm hover-shadow" title="Click to review submitted claims">
+                                            <i class="fa-solid fa-clipboard-check me-1"></i> <?= $item['total_claims'] ?> claim(s)
+                                        </a>
                                     <?php else: ?>
-                                        <span class="text-muted small">0</span>
+                                        <span class="text-muted small">0 claims</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-end pe-4">

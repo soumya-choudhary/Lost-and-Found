@@ -177,6 +177,7 @@ body {
 /* Item Catalog Cards */
 .item-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
 }
 
 .item-card:hover {

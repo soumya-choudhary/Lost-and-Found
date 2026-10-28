@@ -58,6 +58,21 @@ class ClaimRepository {
     }
 
     /**
+     * Find a claim by ID with item reporter details
+     */
+    public function findById(int $claimId): ?array {
+        $sql = "SELECT c.*, i.user_id AS item_user_id, i.contact_email AS item_contact_email, i.title AS item_title
+                FROM claims c
+                JOIN items i ON c.item_id = i.id
+                WHERE c.id = :id
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $claimId]);
+        $claim = $stmt->fetch();
+        return $claim ?: null;
+    }
+
+    /**
      * Get claims for a specific item
      */
     public function getByItemId(int $itemId): array {

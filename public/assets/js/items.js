@@ -220,5 +220,83 @@ $(document).ready(function () {
             $('#upload_prompt').removeClass('d-none');
         });
     }
+
+    // ==========================================
+    // 5. CLICKING WHOLE ITEM CARD OPENS DETAILS
+    // ==========================================
+    $(document).on('click', '.item-card', function (e) {
+        // Do not navigate if user clicked directly on an interactive child element
+        if ($(e.target).closest('a, button, select, input, label').length) {
+            return;
+        }
+
+        const targetUrl = $(this).data('href') || $(this).find('a[href*="item-details.php"]').attr('href');
+        if (targetUrl) {
+            window.location.href = targetUrl;
+        }
+    });
+
+    // ==========================================
+    // 6. REPORTER / ADMIN CLAIM DECISION (Without Reload)
+    // ==========================================
+    $(document).on('click', '.user-claim-decision-btn', function () {
+        const $btn = $(this);
+        const claimId = $btn.data('claim-id');
+        const decision = $btn.data('decision');
+        const confirmMsg = (decision === 'Approved') 
+            ? 'Are you sure you want to approve this ownership claim? The item will automatically be marked as Resolved.' 
+            : 'Are you sure you want to reject this claim?';
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        const defaultNote = (decision === 'Approved') ? 'Ownership verified and confirmed.' : 'Proof did not match item features.';
+        const notes = prompt('Add optional note for the claimant:', defaultNote);
+        if (notes === null) return; // User pressed Cancel
+
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseUrl + '/api/claim-action.php',
+            type: 'POST',
+            data: {
+                claim_id: claimId,
+                decision: decision,
+                admin_notes: notes
+            },
+            dataType: 'json',
+            success: function (res) {
+                if (res.success) {
+                    const $card = $('#claim-card-' + claimId);
+                    const $badge = $card.find('.claim-card-status-badge');
+                    $badge.text(decision).removeClass('bg-warning bg-success bg-danger text-dark text-white');
+
+                    if (decision === 'Approved') {
+                        $badge.addClass('bg-success text-white');
+                        // Update item status on the page
+                        const $itemBadge = $('#detail-status-badge');
+                        $itemBadge.text('Resolved').removeClass('badge-status-open badge-status-claim-requested').addClass('badge-status-resolved');
+                        $('.status-toggle-btn').removeClass('active');
+                        $('.status-toggle-btn[data-status="Resolved"]').addClass('active');
+                    } else {
+                        $badge.addClass('bg-danger text-white');
+                    }
+
+                    // Remove decision buttons after decision
+                    $card.find('.user-claim-decision-btn').parent().remove();
+
+                    alert(res.message);
+                } else {
+                    $btn.prop('disabled', false);
+                    alert(res.message || 'Error updating claim.');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                alert('Server error updating claim decision.');
+            }
+        });
+    });
 });
 

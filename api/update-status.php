@@ -28,14 +28,27 @@ if (!$item) {
     exit;
 }
 
-// Check permission: user is logged in or admin
+// 1. Must be logged in
 if (!isLoggedIn()) {
     echo json_encode(['success' => false, 'message' => 'Please sign in to update item status.']);
     exit;
 }
 
 $user = currentUser();
-$userNote = "Changed by " . $user['name'] . " (" . $user['role'] . "). " . $remarks;
+
+// 2. Authorization check: Only Admin OR the reporter of the item
+$isReporter = ($item['user_id'] && (int)$item['user_id'] === (int)$user['id']) || 
+              (!empty($item['contact_email']) && strtolower(trim($item['contact_email'])) === strtolower(trim($user['email'])));
+
+if (!isAdmin() && !$isReporter) {
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Permission denied. Only the reporter of this item or a campus administrator can change its status.'
+    ]);
+    exit;
+}
+
+$userNote = "Changed by " . $user['name'] . " (" . (isAdmin() ? 'Admin' : 'Reporter') . "). " . $remarks;
 
 $success = $repo->updateStatus($itemId, $newStatus, $userNote);
 
@@ -52,4 +65,3 @@ if ($success) {
         'message' => 'Failed to update item status in database.'
     ]);
 }
-

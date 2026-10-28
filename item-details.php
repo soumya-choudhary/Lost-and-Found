@@ -15,11 +15,18 @@ if (!$item) {
     redirect('index.php');
 }
 
-$claimRepo = new ClaimRepository();
-$claims = $claimRepo->getByItemId($itemId);
-
 $currentUser = currentUser();
 $pageTitle = $item['title'];
+
+// Authorization check: Is the current user an admin OR the original reporter of this item?
+$isReporter = $currentUser && (
+    (!empty($item['user_id']) && (int)$item['user_id'] === (int)$currentUser['id']) ||
+    (!empty($item['contact_email']) && strtolower(trim($item['contact_email'])) === strtolower(trim($currentUser['email'])))
+);
+$canManage = isAdmin() || $isReporter;
+
+$claimRepo = new ClaimRepository();
+$claims = $claimRepo->getByItemId($itemId);
 
 // Get item activity logs
 $db = Database::getConnection();
@@ -48,6 +55,9 @@ require_once __DIR__ . '/layouts/header.php';
                     <?php 
                     $imageSrc = !empty($item['image_url']) ? url($item['image_url']) : url('public/assets/img/placeholder.svg');
                     $typeBadgeClass = ($item['item_type'] === 'lost') ? 'bg-danger' : 'bg-success';
+                    $statusBadgeClass = 'badge-status-open';
+                    if ($item['status'] === 'Claim Requested') $statusBadgeClass = 'badge-status-claim-requested';
+                    elseif ($item['status'] === 'Resolved') $statusBadgeClass = 'badge-status-resolved';
                     ?>
                     <img src="<?= $imageSrc ?>" alt="<?= sanitize($item['title']) ?>" class="img-fluid rounded-3 shadow-sm" style="max-height: 380px; object-fit: contain;">
                     
@@ -55,7 +65,7 @@ require_once __DIR__ . '/layouts/header.php';
                         <?= strtoupper($item['item_type']) ?> ITEM
                     </span>
                     
-                    <span class="badge position-absolute top-0 end-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm" id="detail-status-badge">
+                    <span class="badge position-absolute top-0 end-0 m-3 px-3 py-2 rounded-pill fs-6 shadow-sm <?= $statusBadgeClass ?>" id="detail-status-badge">
                         <?= sanitize($item['status']) ?>
                     </span>
                 </div>
@@ -66,21 +76,22 @@ require_once __DIR__ . '/layouts/header.php';
                             <i class="fa-solid <?= sanitize($item['category_icon'] ?? 'fa-box') ?> me-1"></i>
                             <?= sanitize($item['category_name']) ?>
                         </span>
-                        <span class="text-muted small">Reference ID: #<?= $item['id'] ?></span>
+                        <span class="text-muted small">Ref #<?= $item['id'] ?></span>
                     </div>
 
-                    <!-- Quick AJAX Status Update Widget (Requirement: status operation updates without page reload) -->
+                    <!-- Status Control Widget (Requirement 1: ONLY Reporter and Admin can update) -->
                     <div class="p-3 bg-light rounded-3 border mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold small text-secondary text-uppercase">
-                                <i class="fa-solid fa-bolt me-1 text-warning"></i> Live Status Control
+                                <i class="fa-solid fa-sliders me-1 text-primary"></i> Status Control
                             </span>
                             <small class="text-muted" id="status-update-spinner" style="display: none;">
                                 <i class="fa-solid fa-spinner fa-spin text-primary"></i> Updating...
                             </small>
                         </div>
 
-                        <?php if (isLoggedIn()): ?>
+                        <?php if ($canManage): ?>
+                            <!-- Authorized Reporter / Admin Control -->
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-sm btn-outline-success flex-fill status-toggle-btn <?= ($item['status'] === 'Open') ? 'active' : '' ?>" data-status="Open" data-item-id="<?= $item['id'] ?>">
                                     <i class="fa-solid fa-circle-play me-1"></i> Open
@@ -92,13 +103,20 @@ require_once __DIR__ . '/layouts/header.php';
                                     <i class="fa-solid fa-circle-check me-1"></i> Resolved
                                 </button>
                             </div>
-                            <div class="form-text small mt-1 text-muted">
-                                Click any status button to update in real-time via AJAX (no reload).
+                            <div class="form-text small mt-2 text-muted">
+                                <i class="fa-solid fa-shield-halved text-success me-1"></i> Authorized as <?= $isReporter ? 'Item Reporter' : 'Campus Admin' ?> (Single-click AJAX update).
                             </div>
                         <?php else: ?>
-                            <small class="text-muted">
-                                <a href="<?= url('login.php') ?>" class="text-primary text-decoration-none fw-semibold">Sign in</a> to change item status directly.
-                            </small>
+                            <!-- Non-owners / Random visitors -->
+                            <div class="small text-muted">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span>Current Status:</span>
+                                    <strong class="text-dark"><?= sanitize($item['status']) ?></strong>
+                                </div>
+                                <div class="fst-italic">
+                                    <i class="fa-solid fa-lock text-secondary me-1"></i> Status can only be modified by the student who reported this item or a campus administrator.
+                                </div>
+                            </div>
                         <?php endif; ?>
                     </div>
 
@@ -171,6 +189,85 @@ require_once __DIR__ . '/layouts/header.php';
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <!-- Requirement 2: CLAIMS RECEIVED SECTION (Visible to Reporter of item and Admin) -->
+                <?php if ($canManage): ?>
+                    <div class="card border border-warning-subtle rounded-4 p-4 bg-light mb-4" id="claims-received-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0 text-dark">
+                                <i class="fa-solid fa-clipboard-check text-warning me-2"></i>Claims Received on This Item (<?= count($claims) ?>)
+                            </h5>
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1">
+                                <?= $isReporter ? 'Owner View' : 'Admin View' ?>
+                            </span>
+                        </div>
+
+                        <?php if (empty($claims)): ?>
+                            <div class="text-center py-4 bg-white rounded-3 border text-muted small">
+                                <i class="fa-regular fa-folder-open fa-2x mb-2 d-block text-secondary opacity-50"></i>
+                                No ownership claims have been submitted on this item yet.
+                            </div>
+                        <?php else: ?>
+                            <div class="d-flex flex-column gap-3">
+                                <?php foreach ($claims as $c): ?>
+                                    <?php
+                                    $claimBadgeClass = 'bg-warning text-dark';
+                                    if ($c['status'] === 'Approved') $claimBadgeClass = 'bg-success text-white';
+                                    elseif ($c['status'] === 'Rejected') $claimBadgeClass = 'bg-danger text-white';
+                                    ?>
+                                    <div class="p-3 bg-white rounded-3 border shadow-sm" id="claim-card-<?= $c['id'] ?>">
+                                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                            <div>
+                                                <strong class="text-dark fs-6"><?= sanitize($c['claimant_name']) ?></strong>
+                                                <span class="text-muted small ms-1">(<?= sanitize($c['claimant_email']) ?> <?= !empty($c['claimant_phone']) ? '&bull; ' . sanitize($c['claimant_phone']) : '' ?>)</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge rounded-pill px-3 py-1 <?= $claimBadgeClass ?> claim-card-status-badge">
+                                                    <?= sanitize($c['status']) ?>
+                                                </span>
+                                                <small class="text-muted"><?= date('M d, Y', strtotime($c['created_at'])) ?></small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Proof of Ownership Description -->
+                                        <div class="p-3 bg-light rounded-2 small text-secondary mb-2 border">
+                                            <strong class="d-block text-dark mb-1"><i class="fa-solid fa-fingerprint text-primary me-1"></i> Claimant's Proof of Ownership:</strong>
+                                            <?= nl2br(sanitize($c['proof_description'])) ?>
+                                        </div>
+
+                                        <!-- Proof Attachment if any -->
+                                        <?php if (!empty($c['proof_image_url'])): ?>
+                                            <div class="mb-3">
+                                                <a href="<?= url($c['proof_image_url']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                                    <i class="fa-solid fa-paperclip me-1"></i> View Supporting Document / Photo
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Review Notes if decided -->
+                                        <?php if (!empty($c['admin_notes'])): ?>
+                                            <div class="small text-muted mb-2 fst-italic">
+                                                <i class="fa-solid fa-check-double text-success me-1"></i> Resolution Note: <?= sanitize($c['admin_notes']) ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Reporter / Admin Actions on this claim -->
+                                        <?php if ($c['status'] === 'Pending'): ?>
+                                            <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 user-claim-decision-btn" data-claim-id="<?= $c['id'] ?>" data-decision="Rejected">
+                                                    <i class="fa-solid fa-xmark me-1"></i> Reject Claim
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold user-claim-decision-btn" data-claim-id="<?= $c['id'] ?>" data-decision="Approved">
+                                                    <i class="fa-solid fa-check me-1"></i> Accept &amp; Confirm Owner
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Activity Timeline / Audit Trail -->
                 <h6 class="fw-bold mb-3"><i class="fa-solid fa-timeline me-2 text-primary"></i>Status Activity Trail</h6>
@@ -260,4 +357,3 @@ require_once __DIR__ . '/layouts/header.php';
 $extraScripts = '<script src="' . url('public/assets/js/items.js') . '"></script>';
 require_once __DIR__ . '/layouts/footer.php'; 
 ?>
-

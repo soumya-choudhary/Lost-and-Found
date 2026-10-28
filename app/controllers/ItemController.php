@@ -216,7 +216,7 @@ class ItemController {
         $imageSrc = !empty($item['image_url']) ? url($item['image_url']) : url('public/assets/img/placeholder.svg');
         ?>
         <div class="col-sm-6 col-lg-4 col-xl-3 item-card-wrapper" data-item-id="<?= $item['id'] ?>">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden item-card bg-white position-relative">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden item-card bg-white position-relative" data-href="<?= url('item-details.php?id=' . $item['id']) ?>" role="button">
                 <!-- Image Header with badges -->
                 <div class="item-img-container position-relative bg-light">
                     <img src="<?= $imageSrc ?>" class="card-img-top item-thumbnail" alt="<?= sanitize($item['title']) ?>"
