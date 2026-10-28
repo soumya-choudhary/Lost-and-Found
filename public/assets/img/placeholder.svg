@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">
+  <rect width="400" height="250" fill="#f1f5f9"/>
+  <circle cx="200" cy="110" r="45" fill="#e2e8f0"/>
+  <path d="M185 100 L215 100 L200 80 Z" fill="#94a3b8"/>
+  <rect x="180" y="105" width="40" height="25" rx="4" fill="#94a3b8"/>
+  <circle cx="200" cy="117" r="6" fill="#cbd5e1"/>
+  <text x="200" y="180" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" fill="#94a3b8" text-anchor="middle">No Photo Attached</text>
+  <text x="200" y="200" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" fill="#cbd5e1" text-anchor="middle">Campus Lost &amp; Found</text>
+</svg>
+

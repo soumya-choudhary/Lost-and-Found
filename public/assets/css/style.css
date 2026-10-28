@@ -172,3 +172,77 @@ body {
     font-size: 0.85rem;
 }
 
+
+
+/* Item Catalog Cards */
+.item-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.item-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-hover-shadow) !important;
+}
+
+.item-img-container {
+    height: 190px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f1f5f9;
+}
+
+.item-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.item-card:hover .item-thumbnail {
+    transform: scale(1.04);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Image Upload Dropzone */
+.image-dropzone {
+    border: 2px dashed #94a3b8 !important;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.image-dropzone:hover {
+    border-color: #3b82f6 !important;
+    background: #eff6ff;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Status control buttons active state */
+.status-toggle-btn.btn-outline-success.active {
+    background-color: #10b981 !important;
+    color: #ffffff !important;
+    border-color: #10b981 !important;
+}
+
+.status-toggle-btn.btn-outline-warning.active {
+    background-color: #f59e0b !important;
+    color: #ffffff !important;
+    border-color: #f59e0b !important;
+}
+
+.status-toggle-btn.btn-outline-info.active {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
+}
