@@ -31,8 +31,9 @@ if (!function_exists('loadEnvFile')) {
     }
 }
 
-// Load root .env
+// Load .env (from project root or config folder)
 loadEnvFile(dirname(__DIR__) . '/.env');
+loadEnvFile(__DIR__ . '/.env');
 
 class Database {
     private static ?PDO $instance = null;
@@ -43,7 +44,7 @@ class Database {
             $port = getenv('DB_PORT') ?: '5432';
             $name = getenv('DB_NAME') ?: 'lost_and_found_db';
             $user = getenv('DB_USER') ?: 'postgres';
-            $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
+            $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '');
 
             $dsn = "pgsql:host={$host};port={$port};dbname={$name};";
 
