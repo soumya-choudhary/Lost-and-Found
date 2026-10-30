@@ -1,7 +1,10 @@
-// public/assets/js/auth.js - jQuery Authentication Validation & UI Helpers
+// public/assets/js/auth.js - Authentication, Form Validation & Demo Credentials
 
 $(document).ready(function () {
-    // 1. Password Visibility Toggle
+    // =========================================================================
+    // 1. PASSWORD VISIBILITY TOGGLE
+    // Click eye icon to switch password input between hidden and visible text.
+    // =========================================================================
     $(document).on('click', '.toggle-password-btn', function () {
         const targetId = $(this).data('target');
         const input = $(targetId);
@@ -16,11 +19,14 @@ $(document).ready(function () {
         }
     });
 
-    // 2. Client-side Real-time Validation for Register Form
+    // =========================================================================
+    // 2. REAL-TIME REGISTRATION PASSWORD MATCH VALIDATION
+    // Compares password and confirm_password fields as user types.
+    // =========================================================================
     const $regForm = $('#registerForm');
     if ($regForm.length) {
-        const $password = $('#reg_password');
-        const $confirm = $('#reg_confirm');
+        const $password = $('#reg_password, #password');
+        const $confirm = $('#reg_confirm, #confirm_password');
         const $feedback = $('#password-match-feedback');
 
         function checkPasswordMatch() {
@@ -32,6 +38,7 @@ $(document).ready(function () {
                 return;
             }
 
+            // TO CHANGE MATCH FEEDBACK: Modify messages or classes below
             if (pass !== conf) {
                 $feedback.html('<i class="fa-solid fa-circle-xmark me-1"></i> Passwords do not match.')
                          .removeClass('text-success').addClass('text-danger');
@@ -44,10 +51,12 @@ $(document).ready(function () {
         $password.on('input', checkPasswordMatch);
         $confirm.on('input', checkPasswordMatch);
 
+        // Client-side submit guard
         $regForm.on('submit', function (e) {
             const pass = $password.val();
             const conf = $confirm.val();
 
+            // TO CHANGE MINIMUM PASSWORD LENGTH: Edit 6 below
             if (pass.length < 6) {
                 e.preventDefault();
                 alert('Password must be at least 6 characters long.');
@@ -64,16 +73,30 @@ $(document).ready(function () {
         });
     }
 
-    // 3. Quick-fill Demo Credentials
-    $('.fill-demo-btn').on('click', function () {
+    // =========================================================================
+    // 3. QUICK-FILL DEMO CREDENTIALS (FOR PRESENTATIONS / TESTING)
+    // Supports both #login_email / #login_password and #email / #password
+    // =========================================================================
+    $(document).on('click', '.fill-demo-btn', function () {
         const role = $(this).data('role');
+        const $emailInput = $('#login_email, #email, input[name="email"]');
+        const $passInput  = $('#login_password, #password, input[name="password"]');
+
+        // TO CHANGE DEMO CREDENTIALS: Modify email or password below
         if (role === 'admin') {
-            $('#login_email').val('admin@campus.edu');
-            $('#login_password').val('admin123');
+            $emailInput.val('admin@campus.edu');
+            $passInput.val('admin123');
         } else if (role === 'student') {
-            $('#login_email').val('student@campus.edu');
-            $('#login_password').val('admin123');
+            $emailInput.val('student@campus.edu');
+            $passInput.val('admin123');
         }
+
+        // Highlight inputs briefly so user sees the fill in action
+        $emailInput.addClass('bg-light');
+        $passInput.addClass('bg-light');
+        setTimeout(() => {
+            $emailInput.removeClass('bg-light');
+            $passInput.removeClass('bg-light');
+        }, 500);
     });
 });
-
