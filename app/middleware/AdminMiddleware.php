@@ -1,22 +1,18 @@
 <?php
-// app/middleware/AdminMiddleware.php
+// app/middleware/AdminMiddleware.php - Administrator route guard
 
 require_once __DIR__ . '/../../config/app.php';
 
 class AdminMiddleware {
-    /**
-     * Ensure the user is an authenticated Admin.
-     */
+    // Require admin privileges
     public static function check(): void {
         if (!isLoggedIn()) {
-            setFlash('warning', 'Admin authentication required.');
+            setFlash('warning', 'Please sign in first.');
             redirect('login.php');
         }
-
         if (!isAdmin()) {
-            setFlash('danger', 'Access denied. You do not have permission to view that page.');
-            redirect('index.php');
+            setFlash('danger', 'Admin privileges required.');
+            redirect('student/dashboard.php');
         }
     }
 }
-

@@ -1,5 +1,5 @@
 <?php
-// api/claims.php - AJAX Claim Submission Endpoint
+// api/claims.php - AJAX Ownership Claim Submission
 
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/repositories/ClaimRepository.php';
@@ -8,24 +8,18 @@ require_once __DIR__ . '/../app/repositories/ItemRepository.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+    echo json_encode(['success' => false, 'message' => 'POST request required.']);
     exit;
 }
 
 $itemId = (int)($_POST['item_id'] ?? 0);
-$name = trim($_POST['claimant_name'] ?? '');
-$email = trim($_POST['claimant_email'] ?? '');
-$phone = trim($_POST['claimant_phone'] ?? '');
-$proof = trim($_POST['proof_description'] ?? '');
+$name   = trim($_POST['claimant_name'] ?? '');
+$email  = trim($_POST['claimant_email'] ?? '');
+$phone  = trim($_POST['claimant_phone'] ?? '');
+$proof  = trim($_POST['proof_description'] ?? '');
 
-$errors = [];
-if ($itemId <= 0) $errors[] = 'Invalid item specified.';
-if (empty($name)) $errors[] = 'Your name is required.';
-if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'A valid email is required.';
-if (empty($proof) || strlen($proof) < 10) $errors[] = 'Please provide detailed proof of ownership (at least 10 characters).';
-
-if (!empty($errors)) {
-    echo json_encode(['success' => false, 'message' => implode(' ', $errors)]);
+if ($itemId <= 0 || empty($name) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($proof) < 5) {
+    echo json_encode(['success' => false, 'message' => 'Please provide your name, valid email, and proof details.']);
     exit;
 }
 
@@ -36,52 +30,29 @@ if (!$item) {
     exit;
 }
 
-// Prevent item owner/reporter from filing a claim on their own reported item
-$currentUser = currentUser();
-$isReporter = ($currentUser && !empty($item['user_id']) && (int)$item['user_id'] === (int)$currentUser['id']) ||
-              (strtolower(trim($email)) === strtolower(trim($item['contact_email']))) ||
-              ($currentUser && strtolower(trim($currentUser['email'])) === strtolower(trim($item['contact_email'])));
-
-if ($isReporter) {
-    echo json_encode(['success' => false, 'message' => 'You cannot submit an ownership claim on an item you reported.']);
+// Prevent item owner from claiming their own item
+if (isItemOwner($item) || strtolower($email) === strtolower($item['contact_email'])) {
+    echo json_encode(['success' => false, 'message' => 'You cannot claim an item you reported.']);
     exit;
 }
 
-// Handle optional proof image upload
-$proofImagePath = null;
-if (isset($_FILES['proof_image']) && $_FILES['proof_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-    $file = $_FILES['proof_image'];
-    if ($file['error'] === UPLOAD_ERR_OK && $file['size'] <= 5 * 1024 * 1024) {
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-            $dir = dirname(__DIR__) . '/uploads/claims';
-            if (!is_dir($dir)) mkdir($dir, 0755, true);
-            $fileName = 'proof_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-            if (move_uploaded_file($file['tmp_name'], $dir . '/' . $fileName)) {
-                $proofImagePath = 'uploads/claims/' . $fileName;
-            }
-        }
+// Optional proof file upload
+$proofImage = null;
+if (!empty($_FILES['proof_image']['tmp_name']) && $_FILES['proof_image']['error'] === UPLOAD_ERR_OK) {
+    $ext = strtolower(pathinfo($_FILES['proof_image']['name'], PATHINFO_EXTENSION));
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+        $dir = dirname(__DIR__) . '/uploads/claims';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $file = 'proof_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        if (move_uploaded_file($_FILES['proof_image']['tmp_name'], $dir . '/' . $file)) $proofImage = 'uploads/claims/' . $file;
     }
 }
 
 $claimRepo = new ClaimRepository();
-$claimId = $claimRepo->create([
-    'item_id'           => $itemId,
-    'claimant_name'     => $name,
-    'claimant_email'    => $email,
-    'claimant_phone'    => $phone,
-    'proof_description' => $proof,
-    'proof_image_url'   => $proofImagePath
+$claimId = $claimRepo->create(['item_id' => $itemId, 'claimant_name' => $name, 'claimant_email' => $email, 'claimant_phone' => $phone, 'proof_description' => $proof, 'proof_image_url' => $proofImage]);
+
+echo json_encode([
+    'success'    => (bool)$claimId,
+    'claim_id'   => $claimId,
+    'message'    => $claimId ? 'Claim submitted successfully!' : 'Failed to submit claim.'
 ]);
-
-if ($claimId) {
-    echo json_encode([
-        'success'     => true,
-        'claim_id'    => $claimId,
-        'new_status'  => 'Claim Requested',
-        'message'     => 'Your ownership claim has been submitted! Item status is now Claim Requested.'
-    ]);
-} else {
-    echo json_encode(['success' => false, 'message' => 'Failed to record claim in database.']);
-}
-
