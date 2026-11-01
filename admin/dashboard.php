@@ -54,7 +54,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <div class="col-6 col-md-3">
             <div class="card border shadow-sm p-3 bg-white rounded-3">
                 <small class="text-secondary fw-bold">RESOLVED</small>
-                <div class="fs-3 fw-bold text-primary"><?= $stats['total_resolved'] ?></div>
+                <div class="fs-3 fw-bold text-primary"><?= $stats['total_resolved'] ?? $stats['resolved'] ?? 0 ?></div>
             </div>
         </div>
     </div>

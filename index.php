@@ -38,7 +38,7 @@ require_once __DIR__ . '/layouts/header.php';
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
         <div>
             <h4 class="fw-bold mb-0">Campus Lost &amp; Found</h4>
-            <small class="text-muted"><?= $stats['total_lost'] ?> Lost &bull; <?= $stats['total_found'] ?> Found &bull; <?= $stats['total_resolved'] ?> Reunited</small>
+            <small class="text-muted"><?= $stats['total_lost'] ?> Lost &bull; <?= $stats['total_found'] ?> Found</small>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= url('report-item.php?type=lost') ?>" class="btn btn-danger btn-sm rounded-pill px-3">
