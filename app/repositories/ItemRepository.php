@@ -38,8 +38,16 @@ class ItemRepository {
         return $id ?: null;
     }
 
+    // Synchronize: revert any 'Claim Requested' items without active pending claims back to 'Open'
+    public function syncClaimRequestedItems(): void {
+        try {
+            $this->db->exec("UPDATE items SET status = 'Open' WHERE status = 'Claim Requested' AND id NOT IN (SELECT DISTINCT item_id FROM claims WHERE status = 'Pending')");
+        } catch (Exception $e) {}
+    }
+
     // Search and filter items dynamically (keyword, category, type, status, sort)
     public function searchAndFilter(array $f = []): array {
+        $this->syncClaimRequestedItems();
         $sql = "SELECT i.*, c.name AS category_name, c.icon AS category_icon, u.name AS reporter_name
                 FROM items i JOIN categories c ON i.category_id = c.id LEFT JOIN users u ON i.user_id = u.id WHERE 1=1";
         $params = [];
@@ -93,6 +101,7 @@ class ItemRepository {
 
     // Get items reported by a specific user
     public function getByUserId(int $uid): array {
+        $this->syncClaimRequestedItems();
         $stmt = $this->db->prepare("SELECT i.*, c.name AS category_name, (SELECT COUNT(*) FROM claims WHERE item_id = i.id) AS total_claims
                                      FROM items i JOIN categories c ON i.category_id = c.id WHERE i.user_id = :uid ORDER BY i.created_at DESC");
         $stmt->execute(['uid' => $uid]);
@@ -101,6 +110,7 @@ class ItemRepository {
 
     // Aggregate portal statistics for dashboard counters
     public function getStats(): array {
+        $this->syncClaimRequestedItems();
         $counts = $this->db->query("SELECT 
             COUNT(*) as total,
             COUNT(*) FILTER (WHERE item_type = 'lost') as total_lost,

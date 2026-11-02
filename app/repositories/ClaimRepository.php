@@ -91,6 +91,17 @@ class ClaimRepository {
                 $this->db->prepare("INSERT INTO activity_logs (item_id, action, details) VALUES (:iid, 'Claim Approved', :dt)")
                          ->execute(['iid' => $itemId, 'dt' => 'Approved: ' . $notes]);
             } elseif ($itemId && $status === 'Rejected') {
+                // If rejected, check if there are any remaining pending claims on this item
+                $checkPending = $this->db->prepare("SELECT COUNT(*) FROM claims WHERE item_id = :iid AND status = 'Pending'");
+                $checkPending->execute(['iid' => $itemId]);
+                $remainingPending = (int)$checkPending->fetchColumn();
+
+                // If no remaining pending claims, revert item status from 'Claim Requested' back to 'Open'
+                if ($remainingPending === 0) {
+                    $this->db->prepare("UPDATE items SET status = 'Open' WHERE id = :iid AND status = 'Claim Requested'")
+                             ->execute(['iid' => $itemId]);
+                }
+
                 $this->db->prepare("INSERT INTO activity_logs (item_id, action, details) VALUES (:iid, 'Claim Rejected', :dt)")
                          ->execute(['iid' => $itemId, 'dt' => 'Rejected: ' . $notes]);
             }

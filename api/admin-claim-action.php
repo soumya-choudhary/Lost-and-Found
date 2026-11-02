@@ -40,9 +40,16 @@ if (!isAdmin() && !$isReporter) {
 $note = "Decided by {$currentUser['name']} (" . (isAdmin() ? 'Admin' : 'Reporter') . "): {$notes}";
 $ok   = $claimRepo->updateClaimStatus($claimId, $decision, $note);
 
+// Retrieve updated item status
+$itemStatusStmt = Database::getConnection()->prepare("SELECT status FROM items WHERE id = :iid");
+$itemStatusStmt->execute(['iid' => (int)$claim['item_id']]);
+$newItemStatus  = $itemStatusStmt->fetchColumn() ?: 'Open';
+
 echo json_encode([
-    'success'  => $ok,
-    'claim_id' => $claimId,
-    'decision' => $decision,
-    'message'  => $ok ? "Claim {$decision} successfully!" : "Failed to update claim."
+    'success'     => $ok,
+    'claim_id'    => $claimId,
+    'item_id'     => (int)$claim['item_id'],
+    'item_status' => $newItemStatus,
+    'decision'    => $decision,
+    'message'     => $ok ? "Claim {$decision} successfully!" : "Failed to update claim."
 ]);
