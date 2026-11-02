@@ -15,6 +15,10 @@ class UserRepository {
         return $stmt->fetch() ?: null;
     }
 
+    public function emailExists(string $email): bool {
+        return $this->findByEmail($email) !== null;
+    }
+
     public function findById(int $id): ?array {
         $stmt = $this->db->prepare("SELECT id, name, email, phone, role, created_at FROM users WHERE id = :id");
         $stmt->execute(['id' => $id]);
