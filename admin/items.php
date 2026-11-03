@@ -59,7 +59,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($items as $it): ?>
-                        <tr id="item-row-<?= $it['id'] ?>" class="item-table-row">
+                        <tr id="item-row- <?= $it['id'] ?>" class="item-table-row">
                             <td class="ps-3 text-muted">#<?= $it['id'] ?></td>
                             <td class="fw-bold">
                                 <a href="<?= url('item-details.php?id=' . $it['id']) ?>" class="text-dark text-decoration-none">

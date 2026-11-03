@@ -1,7 +1,18 @@
 -- Campus Lost-and-Found Portal Schema
 -- Database: lost_and_found_db
+--
+-- RELATIONAL INTEGRITY RULES (How foreign keys behave):
+-- 1. items.category_id -> categories(id) ON DELETE RESTRICT:
+--    A category cannot be deleted if there are items assigned to it (prevents orphan items).
+-- 2. items.user_id -> users(id) ON DELETE SET NULL:
+--    If a student deletes their account, their reported items remain in the catalog with user_id = NULL
+--    so the item can still be claimed, while contact_name and contact_email preserve contact info.
+-- 3. claims.item_id -> items(id) ON DELETE CASCADE:
+--    If an item is deleted by an administrator, all its submitted claims are automatically removed.
+-- 4. activity_logs.item_id -> items(id) ON DELETE CASCADE:
+--    If an item is deleted, its audit trail entries are automatically cleaned up.
 
--- Drop tables if they already exist (in reverse dependency order)
+-- Drop tables if they already exist (in reverse dependency order to avoid FK constraint errors)
 DROP TABLE IF EXISTS activity_logs CASCADE;
 DROP TABLE IF EXISTS claims CASCADE;
 DROP TABLE IF EXISTS items CASCADE;

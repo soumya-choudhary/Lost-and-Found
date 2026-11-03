@@ -20,16 +20,24 @@
 
 // Function to parse key=value lines from .env file into PHP environment
 function loadEnv(string $path): void {
+    
     if (!file_exists($path)) return;
+    
     foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        
         $line = trim($line);
         // Skip comments starting with '#' and empty lines
+        
         if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) continue;
+        
         [$k, $v] = explode('=', $line, 2);
         // Strip surrounding quotes
+        
         $v = trim($v, " \t\n\r\0\x0B\"'");
+        
         putenv(trim($k) . "=$v");
-        $_ENV[trim($k)] = $v;
+        
+        $_ENV[trim($k)] = $v;        
     }
 }
 
@@ -63,6 +71,7 @@ class Database {
                 die("DB Connection Error: " . $e->getMessage() . "<br>Please check PostgreSQL service status and .env credentials.");
             }
         }
+        
         return self::$db;
     }
 }

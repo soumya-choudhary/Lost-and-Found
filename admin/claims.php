@@ -1,5 +1,17 @@
 <?php
 // admin/claims.php - Claims Evaluation Desk
+//
+// WHAT THIS PAGE DOES:
+// 1. Guarded by AdminMiddleware::check() so only administrators can view all campus claims.
+// 2. Fetches the latest 100 claims via ClaimRepository::getAll().
+// 3. Renders a filterable table of claims with status tabs (All, Pending, Approved, Rejected).
+// 4. Provides a "Review" button opening a Bootstrap modal with claimant proof inspection and
+//    instant AJAX decision buttons (Approve / Reject) handled by public/assets/js/admin.js.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "The Claims Desk allows staff to verify ownership claims. Approving a claim marks the item
+// as 'Resolved' via api/admin-claim-action.php, while rejecting checks if other pending claims
+// exist and reverts the item back to 'Open' if none remain."
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/middleware/AdminMiddleware.php';
 require_once __DIR__ . '/../app/repositories/ClaimRepository.php';
@@ -19,9 +31,13 @@ require_once __DIR__ . '/../layouts/header.php';
     <div class="card border shadow-sm rounded-3 overflow-hidden bg-white">
         <div class="p-2 border-bottom bg-light">
             <div class="btn-group btn-group-sm" id="claimFilterButtons">
+                
                 <button type="button" class="btn btn-outline-secondary active" data-claim-status="all">All (<?= count($claims) ?>)</button>
+                
                 <button type="button" class="btn btn-outline-warning" data-claim-status="Pending">Pending</button>
+                
                 <button type="button" class="btn btn-outline-success" data-claim-status="Approved">Approved</button>
+                
                 <button type="button" class="btn btn-outline-danger" data-claim-status="Rejected">Rejected</button>
             </div>
         </div>

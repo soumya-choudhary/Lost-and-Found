@@ -1,5 +1,17 @@
 <?php
 // student/dashboard.php - Student & Staff Personal Dashboard
+//
+// WHAT THIS PAGE DOES:
+// 1. Enforces authentication via AuthMiddleware::check().
+// 2. Loads current user's profile from session via currentUser().
+// 3. Queries items reported by this student using ItemRepository::getByUserId().
+// 4. Queries claims submitted by this student using ClaimRepository::getByUserEmail().
+// 5. Computes personalized statistics (Reported Items, Submitted Claims, Resolved Items).
+// 6. Displays a preview of the student's recent reports with quick links to manage them.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "The Student Dashboard gives registered users a personalized overview of their campus activity,
+// allowing them to track the status of items they have lost or found and monitor any claims they filed."
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../app/repositories/ItemRepository.php';

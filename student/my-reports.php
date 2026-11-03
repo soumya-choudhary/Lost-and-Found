@@ -1,5 +1,16 @@
 <?php
 // student/my-reports.php - Items Reported by the Current Student
+//
+// WHAT THIS PAGE DOES:
+// 1. Guarded by AuthMiddleware::check() so only signed-in students can view it.
+// 2. Fetches all items created by the user via ItemRepository::getByUserId($currentUser['id']).
+// 3. Displays a comprehensive table showing Item Title, Type (Lost/Found), Category, Location,
+//    Incident Date, Live Status, and Total Received Claims.
+// 4. Clicking the claims badge navigates directly to the Received Claims Desk on item-details.php.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "This page lists the items reported by the logged-in student and shows how many claims have been
+// submitted by other students for each item, allowing the reporter to review claimant proof."
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../app/repositories/ItemRepository.php';

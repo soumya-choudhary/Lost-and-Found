@@ -1,5 +1,15 @@
 <?php
 // student/my-claims.php - Ownership Claims Submitted by the Current Student
+//
+// WHAT THIS PAGE DOES:
+// 1. Guarded by AuthMiddleware::check().
+// 2. Fetches all claims filed by the student using their account email (ClaimRepository::getByUserEmail()).
+// 3. Displays claimed item title, verification status badge (Pending / Approved / Rejected),
+//    submitted proof description, reviewer resolution notes, and date.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "This page enables students to follow the status of their claims and read any feedback or notes
+// provided by the item reporter or administrator after reviewing their proof."
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../app/repositories/ClaimRepository.php';

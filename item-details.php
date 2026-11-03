@@ -1,5 +1,22 @@
 <?php
 // item-details.php - Item Details, Status Controls & Claim Desk
+//
+// WHAT THIS PAGE DOES:
+// 1. Reads ?id=X parameter and fetches item record via ItemRepository::findById().
+// 2. Evaluates user permissions using helper functions:
+//    - $isReporter: true if logged-in user is the person who reported this item.
+//    - $canManage: true if logged-in user is an Administrator OR the reporter.
+// 3. Conditional Rendering based on role:
+//    - If $canManage is true: Shows live Status Control buttons (Open, In Claim, Resolved)
+//      and the Received Claims Desk with Accept/Reject action buttons.
+//    - If visitor/other student: Shows "Submit Ownership Claim" button (opens claim modal).
+//    - If $isReporter is true: Blocks the user from claiming their own item.
+// 4. Displays full activity audit log for the item.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "This is the central lifecycle hub of an item. Only authorized users (the owner or admin)
+// can transition statuses or review claimant evidence. Any other campus user can file a claim
+// with proof details and photos."
 require_once __DIR__ . '/config/app.php';
 require_once __DIR__ . '/app/repositories/ItemRepository.php';
 require_once __DIR__ . '/app/repositories/ClaimRepository.php';

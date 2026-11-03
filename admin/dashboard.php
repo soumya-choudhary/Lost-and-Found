@@ -1,5 +1,16 @@
 <?php
-// admin/dashboard.php - Campus Admin Overview
+// admin/dashboard.php - Campus Admin Overview Console
+//
+// WHAT THIS PAGE DOES:
+// 1. Enforces administrator authentication via AdminMiddleware::check().
+// 2. Queries aggregate system counters via ItemRepository::getStats() (Lost, Found, Resolved).
+// 3. Queries pending claims count via ClaimRepository::getPendingCount().
+// 4. Fetches the 5 most recent claims submitted across the campus for quick review.
+// 5. Provides navigation pills to Claims Desk, Inventory Management, and User Directory.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "The Admin Dashboard provides real-time oversight of the lost and found inventory and pending claims.
+// Access is restricted to users with the 'admin' role through AdminMiddleware."
 
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../app/middleware/AdminMiddleware.php';

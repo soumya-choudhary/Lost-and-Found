@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Lost & Found - Function & File Directory</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --fn-color: #38bdf8;       /* Bright Sky Blue for Functions */
+            --class-color: #f472b6;    /* Pink / Magenta for Classes */
+            --file-color: #facc15;     /* Amber / Gold for Files */
+            --type-color: #4ade80;     /* Mint Green for Types */
+            --param-color: #fb923c;    /* Orange for Parameters */
+            --sql-color: #a78bfa;      /* Purple for SQL queries */
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            padding-bottom: 80px;
+        }
+        .header-box {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+        .search-box {
+            background-color: #1e293b;
+            border: 2px solid #3b82f6;
+            color: #fff;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            padding: 12px 20px;
+        }
+        .search-box:focus {
+            background-color: #1e293b;
+            color: #fff;
+            border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 8px;
+        }
+        .file-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .file-card:hover {
+            border-color: #60a5fa;
+        }
+        .file-header {
+            background-color: #0f172a;
+            border-bottom: 1px solid var(--card-border);
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .file-path {
+            color: var(--file-color);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .class-badge {
+            background-color: rgba(244, 114, 182, 0.15);
+            color: var(--class-color);
+            border: 1px solid rgba(244, 114, 182, 0.3);
+            font-size: 0.85rem;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .function-item {
+            padding: 14px 18px;
+            border-bottom: 1px solid #263349;
+            transition: background-color 0.1s;
+        }
+        .function-item:last-child {
+            border-bottom: none;
+        }
+        .function-item:hover {
+            background-color: #243047;
+        }
+        .fn-signature {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+        }
+        .fn-name {
+            color: var(--fn-color);
+            font-weight: 700;
+        }
+        .fn-param {
+            color: var(--param-color);
+        }
+        .fn-type {
+            color: var(--type-color);
+            font-weight: 600;
+        }
+        .fn-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .fn-query {
+            background-color: #0d131f;
+            border-left: 3px solid var(--sql-color);
+            padding: 6px 12px;
+            margin-top: 6px;
+            font-family: monospace;
+            font-size: 0.88rem;
+            color: var(--sql-color);
+            border-radius: 0 4px 4px 0;
+        }
+        .quick-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tag-auth { background: #7c2d12; color: #fdba74; }
+        .tag-db { background: #3b0764; color: #d8b4fe; }
+        .tag-ui { background: #064e3b; color: #6ee7b7; }
+        .tag-api { background: #1e3a8a; color: #93c5fd; }
+        .tag-admin { background: #831843; color: #fbcfe8; }
+        .legend-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 15px;
+            font-size: 0.85rem;
+        }
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+    <!-- Top Header -->
+    <div class="header-box">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="fa-solid fa-code me-2"></i>Campus Lost &amp; Found — Function Directory</h2>
+                <p class="mb-0 text-light opacity-75">Color-coded index of every function, repository method, controller, and API endpoint</p>
+            </div>
+            <div>
+                <span class="badge bg-dark px-3 py-2 fs-6">Press <kbd>Ctrl + F</kbd> or use live search below</span>
+            </div>
+        </div>
+
+        <!-- Color Legend -->
+        <div class="mt-3 pt-3 border-top border-light border-opacity-25 d-flex flex-wrap align-items-center">
+            <span class="legend-pill"><span class="color-dot" style="background: var(--file-color);"></span> <strong style="color:var(--file-color);">File Path</strong></span>
+            <span class="legend-pill"><span class="color-dot" style="background: var(--class-color);"></span> <strong style="color:var(--class-color);">Class Name</strong></span>
+            <span class="legend-pill"><span class="color-dot" style="background: var(--fn-color);"></span> <strong style="color:var(--fn-color);">Function / Method</strong></span>
+            <span class="legend-pill"><span class="color-dot" style="background: var(--param-color);"></span> <strong style="color:var(--param-color);">Parameters</strong></span>
+            <span class="legend-pill"><span class="color-dot" style="background: var(--type-color);"></span> <strong style="color:var(--type-color);">Return Type</strong></span>
+            <span class="legend-pill"><span class="color-dot" style="background: var(--sql-color);"></span> <strong style="color:var(--sql-color);">SQL / Route</strong></span>
+        </div>
+    </div>
+
+    <!-- Live Search Input -->
+    <div class="mb-4">
+        <input type="text" id="directorySearch" class="form-control search-box" placeholder="Type here to filter functions (e.g. 'status', 'password', 'upload', 'role', 'claim', 'badge')...">
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 1. CONFIGURATION & GLOBAL HELPERS -->
+    <!-- ========================================================================= -->
+    <div class="section-title">
+        <i class="fa-solid fa-gear text-warning"></i> 1. Global Helper Functions &amp; Config
+    </div>
+
+    <!-- config/database.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>config/database.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: Database</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">loadEnv</span>(<span class="fn-param">string $path</span>): <span class="fn-type">void</span>
+                <span class="quick-tag tag-db ms-2">ENV</span>
+            </div>
+            <div class="fn-desc">Parses key-value lines from the <code>.env</code> file into PHP environment variables (<code>putenv</code> &amp; <code>$_ENV</code>).</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">Database::getConnection</span>(): <span class="fn-type">PDO</span>
+                <span class="quick-tag tag-db ms-2">SINGLETON</span>
+            </div>
+            <div class="fn-desc">Singleton database connection. Creates and returns a single active PostgreSQL PDO instance with error mode <code>ERRMODE_EXCEPTION</code> and native prepares.</div>
+            <div class="fn-query">pgsql:host={$host};port={$port};dbname={$name};</div>
+        </div>
+    </div>
+
+    <!-- config/app.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>config/app.php</span>
+            <span class="badge bg-secondary">Global Helpers</span>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">url</span>(<span class="fn-param">string $path = ''</span>): <span class="fn-type">string</span>
+                <span class="quick-tag tag-ui ms-2">URL</span>
+            </div>
+            <div class="fn-desc">Generates an absolute URL by prefixing <code>APP_URL</code> (e.g. <code>url('login.php')</code> &rarr; <code>http://localhost/Lost-and-Found/login.php</code>).</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">redirect</span>(<span class="fn-param">string $path</span>): <span class="fn-type">void</span>
+                <span class="quick-tag tag-ui ms-2">NAV</span>
+            </div>
+            <div class="fn-desc">Safe HTTP redirection. Sends <code>Location: ...</code> header and immediately terminates script execution.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">setFlash</span>(<span class="fn-param">string $type</span>, <span class="fn-param">string $message</span>): <span class="fn-type">void</span>
+                <span class="quick-tag tag-ui ms-2">SESSION</span>
+            </div>
+            <div class="fn-desc">Stores a one-time flash notification in session (<code>$type</code>: 'success', 'danger', 'warning', 'info').</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getFlash</span>(): <span class="fn-type">?array</span>
+                <span class="quick-tag tag-ui ms-2">SESSION</span>
+            </div>
+            <div class="fn-desc">Retrieves the current flash notice and immediately deletes it from <code>$_SESSION['flash']</code> so it only displays once.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">isLoggedIn</span>(): <span class="fn-type">bool</span>
+                <span class="quick-tag tag-auth ms-2">AUTH</span>
+            </div>
+            <div class="fn-desc">Checks if the current visitor is authenticated (returns true if <code>!empty($_SESSION['user_id'])</code>).</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">isAdmin</span>(): <span class="fn-type">bool</span>
+                <span class="quick-tag tag-admin ms-2">ROLE</span>
+            </div>
+            <div class="fn-desc">Checks if the currently logged-in user has administrator privileges (<code>$_SESSION['user_role'] === 'admin'</code>).</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">currentUser</span>(): <span class="fn-type">?array</span>
+                <span class="quick-tag tag-auth ms-2">USER</span>
+            </div>
+            <div class="fn-desc">Returns an associative array <code>['id', 'name', 'email', 'role']</code> of the logged-in user, or <code>null</code> if guest.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">sanitize</span>(<span class="fn-param">$val</span>): <span class="fn-type">string</span>
+                <span class="quick-tag tag-auth ms-2">XSS PROTECTION</span>
+            </div>
+            <div class="fn-desc">Wraps <code>htmlspecialchars(trim((string)$val), ENT_QUOTES, 'UTF-8')</code> to neutralize malicious script injection.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">isItemOwner</span>(<span class="fn-param">array $item</span>, <span class="fn-param">?array $user = null</span>): <span class="fn-type">bool</span>
+                <span class="quick-tag tag-auth ms-2">OWNERSHIP</span>
+            </div>
+            <div class="fn-desc">Returns true if user is the reporter of the item (matches <code>item.user_id === user.id</code> OR <code>item.contact_email === user.email</code>).</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">canManageItem</span>(<span class="fn-param">array $item</span>, <span class="fn-param">?array $user = null</span>): <span class="fn-type">bool</span>
+                <span class="quick-tag tag-admin ms-2">PERMISSIONS</span>
+            </div>
+            <div class="fn-desc">Central authorization rule: returns true if user is either an <strong>Administrator</strong> OR the <strong>Original Reporter</strong>.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">typeBadgeClass</span>(<span class="fn-param">string $type</span>): <span class="fn-type">string</span>
+                <span class="quick-tag tag-ui ms-2">BADGE</span>
+            </div>
+            <div class="fn-desc">Returns Bootstrap badge class: <code>bg-danger</code> for 'lost', <code>bg-success</code> for 'found'.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">statusBadgeClass</span>(<span class="fn-param">string $status</span>): <span class="fn-type">string</span>
+                <span class="quick-tag tag-ui ms-2">BADGE</span>
+            </div>
+            <div class="fn-desc">PHP 8 match block returning custom CSS classes: <code>badge-status-open</code>, <code>badge-status-claim-requested</code>, or <code>badge-status-resolved</code>.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">claimBadgeClass</span>(<span class="fn-param">string $status</span>): <span class="fn-type">string</span>
+                <span class="quick-tag tag-ui ms-2">BADGE</span>
+            </div>
+            <div class="fn-desc">Returns badge class for claim decisions: <code>bg-success</code> ('Approved'), <code>bg-danger</code> ('Rejected'), <code>bg-warning</code> ('Pending').</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">itemImageUrl</span>(<span class="fn-param">$itemOrPath = null</span>): <span class="fn-type">string</span>
+                <span class="quick-tag tag-ui ms-2">IMAGE</span>
+            </div>
+            <div class="fn-desc">Resolves image URL. If uploaded photo path is missing, returns default fallback <code>public/assets/img/placeholder.svg</code>.</div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 2. ROUTE MIDDLEWARE -->
+    <!-- ========================================================================= -->
+    <div class="section-title">
+        <i class="fa-solid fa-shield-halved text-danger"></i> 2. Security &amp; Route Middleware
+    </div>
+
+    <!-- app/middleware/AuthMiddleware.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/middleware/AuthMiddleware.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: AuthMiddleware</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">AuthMiddleware::check</span>(): <span class="fn-type">void</span>
+                <span class="quick-tag tag-auth ms-2">GUARD</span>
+            </div>
+            <div class="fn-desc">Requires user login. If not signed in, sets a warning flash and redirects to <code>login.php</code>.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">AuthMiddleware::guestOnly</span>(): <span class="fn-type">void</span>
+                <span class="quick-tag tag-auth ms-2">GUEST</span>
+            </div>
+            <div class="fn-desc">Used on sign-in and register pages. If visitor is already authenticated, redirects admin to <code>admin/dashboard.php</code> or student to <code>student/dashboard.php</code>.</div>
+        </div>
+    </div>
+
+    <!-- app/middleware/AdminMiddleware.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/middleware/AdminMiddleware.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: AdminMiddleware</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">AdminMiddleware::check</span>(): <span class="fn-type">void</span>
+                <span class="quick-tag tag-admin ms-2">ADMIN ONLY</span>
+            </div>
+            <div class="fn-desc">Enforces administrator access. If <code>!isAdmin()</code>, flashes danger notice and redirects to <code>login.php</code>.</div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 3. DATABASE REPOSITORIES -->
+    <!-- ========================================================================= -->
+    <div class="section-title">
+        <i class="fa-solid fa-database text-info"></i> 3. Database Repositories (PDO SQL Queries)
+    </div>
+
+    <!-- UserRepository.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/repositories/UserRepository.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: UserRepository</span>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">findByEmail</span>(<span class="fn-param">string $email</span>): <span class="fn-type">?array</span>
+            </div>
+            <div class="fn-desc">Fetches single user by email (case-insensitive search).</div>
+            <div class="fn-query">SELECT * FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">emailExists</span>(<span class="fn-param">string $email</span>): <span class="fn-type">bool</span>
+            </div>
+            <div class="fn-desc">Returns true if email already exists in <code>users</code> table.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">findById</span>(<span class="fn-param">int $id</span>): <span class="fn-type">?array</span>
+            </div>
+            <div class="fn-desc">Fetches user profile by primary key <code>id</code>.</div>
+            <div class="fn-query">SELECT id, name, email, phone, role, created_at FROM users WHERE id = :id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">create</span>(<span class="fn-param">string $name</span>, <span class="fn-param">string $email</span>, <span class="fn-param">string $password</span>, <span class="fn-param">?string $phone = null</span>): <span class="fn-type">?int</span>
+            </div>
+            <div class="fn-desc">Hashes password with <code>password_hash(..., PASSWORD_BCRYPT)</code>, inserts record with default role <code>'user'</code>, and returns the generated <code>id</code>.</div>
+            <div class="fn-query">INSERT INTO users (name, email, password_hash, phone, role) VALUES (...) RETURNING id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">updateRole</span>(<span class="fn-param">int $userId</span>, <span class="fn-param">string $newRole</span>): <span class="fn-type">bool</span>
+            </div>
+            <div class="fn-desc">Promotes or demotes user role between <code>'user'</code> and <code>'admin'</code>.</div>
+            <div class="fn-query">UPDATE users SET role = :role WHERE id = :id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getAll</span>(<span class="fn-param">int $limit = 100</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Fetches all registered users ordered by creation date for the Admin Users console.</div>
+            <div class="fn-query">SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC LIMIT :lim</div>
+        </div>
+    </div>
+
+    <!-- ItemRepository.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/repositories/ItemRepository.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: ItemRepository</span>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getAllCategories</span>(): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Fetches all categories for dropdown selectors and filter lists.</div>
+            <div class="fn-query">SELECT * FROM categories ORDER BY name ASC</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">create</span>(<span class="fn-param">array $d</span>): <span class="fn-type">?int</span>
+            </div>
+            <div class="fn-desc">Inserts a new lost or found report into <code>items</code> and automatically logs a 'Created' event in <code>activity_logs</code>.</div>
+            <div class="fn-query">INSERT INTO items (item_type, title, category_id, location, event_date, description, image_url, status, user_id, contact_name, contact_email, contact_phone) VALUES (...) RETURNING id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">syncClaimRequestedItems</span>(): <span class="fn-type">void</span>
+            </div>
+            <div class="fn-desc">Auto-synchronization: Reverts any item marked <code>'Claim Requested'</code> back to <code>'Open'</code> if it no longer has any pending claims.</div>
+            <div class="fn-query">UPDATE items SET status = 'Open' WHERE status = 'Claim Requested' AND id NOT IN (SELECT DISTINCT item_id FROM claims WHERE status = 'Pending')</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">searchAndFilter</span>(<span class="fn-param">array $f = []</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Builds dynamic SQL query with <code>ILIKE</code> keyword search (title, description, location), category filter, item type filter ('lost'/'found'), status filter, and custom sorting.</div>
+            <div class="fn-query">SELECT i.*, c.name AS category_name, c.icon AS category_icon, u.name AS reporter_name FROM items i JOIN categories c ... WHERE ...</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">findById</span>(<span class="fn-param">int $id</span>): <span class="fn-type">?array</span>
+            </div>
+            <div class="fn-desc">Finds a single item joined with category name/icon and reporter name/email.</div>
+            <div class="fn-query">SELECT i.*, c.name, u.name AS reporter_name FROM items i JOIN categories c ... WHERE i.id = :id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">updateStatus</span>(<span class="fn-param">int $id</span>, <span class="fn-param">string $status</span>, <span class="fn-param">string $remarks = ''</span>): <span class="fn-type">bool</span>
+            </div>
+            <div class="fn-desc">Updates status ('Open', 'Claim Requested', 'Resolved') and automatically records a new audit entry in <code>activity_logs</code>.</div>
+            <div class="fn-query">UPDATE items SET status = :status, updated_at = CURRENT_TIMESTAMP WHERE id = :id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getByUserId</span>(<span class="fn-param">int $uid</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Fetches all items reported by a specific user with a subquery counting incoming claims.</div>
+            <div class="fn-query">SELECT i.*, c.name, (SELECT COUNT(*) FROM claims WHERE item_id = i.id) AS total_claims FROM items i ... WHERE i.user_id = :uid</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getStats</span>(): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Aggregates portal analytics counters using PostgreSQL <code>FILTER (WHERE ...)</code> clauses.</div>
+            <div class="fn-query">SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE item_type = 'lost') as total_lost, COUNT(*) FILTER (WHERE status = 'Open') as open ... FROM items</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">delete</span>(<span class="fn-param">int $id</span>): <span class="fn-type">bool</span>
+            </div>
+            <div class="fn-desc">Permanently deletes item. Foreign keys with <code>ON DELETE CASCADE</code> remove its claims and activity logs automatically.</div>
+            <div class="fn-query">DELETE FROM items WHERE id = :id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">logActivity</span>(<span class="fn-param">int $id</span>, <span class="fn-param">string $action</span>, <span class="fn-param">string $details = ''</span>): <span class="fn-type">bool</span>
+            </div>
+            <div class="fn-desc">Inserts a record into the item's audit trail.</div>
+            <div class="fn-query">INSERT INTO activity_logs (item_id, action, details) VALUES (:id, :action, :details)</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getActivityLogs</span>(<span class="fn-param">int $id</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Retrieves the 20 most recent audit logs for an item.</div>
+            <div class="fn-query">SELECT * FROM activity_logs WHERE item_id = :id ORDER BY created_at DESC LIMIT 20</div>
+        </div>
+    </div>
+
+    <!-- ClaimRepository.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/repositories/ClaimRepository.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: ClaimRepository</span>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">create</span>(<span class="fn-param">array $d</span>): <span class="fn-type">?int</span>
+            </div>
+            <div class="fn-desc">Transactional claim submission: inserts claim as <code>'Pending'</code>, changes parent item status from <code>'Open'</code> to <code>'Claim Requested'</code>, and logs <code>'Claim Filed'</code>.</div>
+            <div class="fn-query">INSERT INTO claims (item_id, claimant_name, claimant_email, proof_description, proof_image_url, status) VALUES (...) RETURNING id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">findById</span>(<span class="fn-param">int $id</span>): <span class="fn-type">?array</span>
+            </div>
+            <div class="fn-desc">Fetches claim joined with item's reporter info (<code>item_user_id</code>, <code>item_contact_email</code>) for permission checks.</div>
+            <div class="fn-query">SELECT c.*, i.user_id AS item_user_id, i.contact_email, i.title FROM claims c JOIN items i ON c.item_id = i.id WHERE c.id = :id</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getPendingCount</span>(): <span class="fn-type">int</span>
+            </div>
+            <div class="fn-desc">Returns count of claims awaiting verification.</div>
+            <div class="fn-query">SELECT COUNT(*) FROM claims WHERE status = 'Pending'</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getByItemId</span>(<span class="fn-param">int $iid</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Fetches all claims filed against a specific item.</div>
+            <div class="fn-query">SELECT * FROM claims WHERE item_id = :iid ORDER BY created_at DESC</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getByUserEmail</span>(<span class="fn-param">string $email</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Fetches all claims submitted by a student's email address.</div>
+            <div class="fn-query">SELECT c.*, i.title AS item_title FROM claims c JOIN items i ON c.item_id = i.id WHERE LOWER(c.claimant_email) = LOWER(:em)</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getAll</span>(<span class="fn-param">int $limit = 100</span>): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Fetches claims joined with item title for the Admin Claims Desk.</div>
+            <div class="fn-query">SELECT c.*, i.title AS item_title FROM claims c JOIN items i ON c.item_id = i.id ORDER BY c.created_at DESC LIMIT :lim</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">updateClaimStatus</span>(<span class="fn-param">int $cid</span>, <span class="fn-param">string $status</span>, <span class="fn-param">string $notes = ''</span>): <span class="fn-type">bool</span>
+            </div>
+            <div class="fn-desc">Transactional decision handler: updates claim to 'Approved' or 'Rejected'. If Approved, marks item as <strong>'Resolved'</strong>. If Rejected and no pending claims remain, reverts item to <strong>'Open'</strong>.</div>
+            <div class="fn-query">UPDATE claims SET status = :st, admin_notes = :nt, resolved_at = CURRENT_TIMESTAMP WHERE id = :cid RETURNING item_id</div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 4. CONTROLLERS -->
+    <!-- ========================================================================= -->
+    <div class="section-title">
+        <i class="fa-solid fa-sliders text-success"></i> 4. Business Logic Controllers
+    </div>
+
+    <!-- AuthController.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/controllers/AuthController.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: AuthController</span>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">handleLogin</span>(): <span class="fn-type">array</span>
+                <span class="quick-tag tag-auth ms-2">LOGIN</span>
+            </div>
+            <div class="fn-desc">Validates email &amp; password, calls <code>password_verify()</code> against bcrypt hash, regenerates session ID (<code>session_regenerate_id(true)</code>), populates session, and redirects by role.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">handleRegister</span>(): <span class="fn-type">array</span>
+                <span class="quick-tag tag-auth ms-2">REGISTER</span>
+            </div>
+            <div class="fn-desc">Validates name (>= 2 chars), email format, password (>= 6 chars), password confirmation, uniqueness of email, creates user account, auto-signs in student, and redirects to dashboard.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">logout</span>(): <span class="fn-type">void</span>
+                <span class="quick-tag tag-auth ms-2">LOGOUT</span>
+            </div>
+            <div class="fn-desc">Clears <code>$_SESSION = []</code>, calls <code>session_destroy()</code>, and redirects to <code>login.php</code>.</div>
+        </div>
+    </div>
+
+    <!-- ItemController.php -->
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>app/controllers/ItemController.php</span>
+            <span class="class-badge"><i class="fa-solid fa-cube me-1"></i>Class: ItemController</span>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getCategories</span>(): <span class="fn-type">array</span>
+            </div>
+            <div class="fn-desc">Calls <code>ItemRepository::getAllCategories()</code>.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">getItem</span>(<span class="fn-param">int $id</span>): <span class="fn-type">?array</span>
+            </div>
+            <div class="fn-desc">Calls <code>ItemRepository::findById($id)</code>.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">handleReportSubmission</span>(): <span class="fn-type">array</span>
+                <span class="quick-tag tag-ui ms-2">REPORT FORM</span>
+            </div>
+            <div class="fn-desc">Validates report fields (type, title, category, location, event date not in future, description, contact details). Handles photo upload to <code>uploads/items/</code> (validates JPG/PNG/WEBP &lt;= 5MB). Inserts item and redirects to <code>item-details.php?id=...</code>.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">handleAjaxFilter</span>(): <span class="fn-type">void</span>
+                <span class="quick-tag tag-api ms-2">AJAX JSON</span>
+            </div>
+            <div class="fn-desc">Endpoint handler for <code>api/items.php</code>. Fetches filtered items, buffers HTML cards via <code>renderItemCard()</code>, and outputs JSON: <code>{success: true, count: N, html: "..."}</code>.</div>
+        </div>
+
+        <div class="function-item">
+            <div class="fn-signature">
+                <span class="fn-name">renderItemCard</span>(<span class="fn-param">array $item</span>): <span class="fn-type">void</span>
+                <span class="quick-tag tag-ui ms-2">HTML CARD</span>
+            </div>
+            <div class="fn-desc">Echoes the clickable Bootstrap card markup for an item listing (badges, image, category, title, description, location, date).</div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 5. AJAX API ENDPOINTS -->
+    <!-- ========================================================================= -->
+    <div class="section-title">
+        <i class="fa-solid fa-network-wired text-primary"></i> 5. AJAX API Endpoints (api/)
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>api/items.php</span>
+            <span class="quick-tag tag-api">GET &bull; PUBLIC</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">GET /api/items.php</span> &rarr; <span class="fn-type">JSON { success, count, html }</span></div>
+            <div class="fn-desc">Parameters: <code>q</code>, <code>type</code>, <code>category</code>, <code>status</code>, <code>sort</code>. Powers real-time debounced catalog search.</div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>api/update-status.php</span>
+            <span class="quick-tag tag-admin">POST &bull; REPORTER OR ADMIN</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">POST /api/update-status.php</span> &rarr; <span class="fn-type">JSON { success, item_id, new_status, message }</span></div>
+            <div class="fn-desc">Parameters: <code>item_id</code>, <code>status</code> ('Open', 'Claim Requested', 'Resolved'), <code>remarks</code>. Checks <code>canManageItem()</code>.</div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>api/claims.php</span>
+            <span class="quick-tag tag-auth">POST &bull; SIGNED IN</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">POST /api/claims.php</span> &rarr; <span class="fn-type">JSON { success, claim_id, message }</span></div>
+            <div class="fn-desc">Parameters: <code>item_id</code>, <code>claimant_name</code>, <code>claimant_email</code>, <code>claimant_phone</code>, <code>proof_description</code>, <code>proof_image</code>. <strong>Blocks item's own reporter from submitting a claim.</strong></div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>api/admin-claim-action.php (alias: api/claim-action.php)</span>
+            <span class="quick-tag tag-admin">POST &bull; REPORTER OR ADMIN</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">POST /api/admin-claim-action.php</span> &rarr; <span class="fn-type">JSON { success, claim_id, item_status, decision }</span></div>
+            <div class="fn-desc">Parameters: <code>claim_id</code>, <code>decision</code> ('Approved' / 'Rejected'), <code>admin_notes</code>. Approving claim marks item as Resolved.</div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>api/admin-item-delete.php</span>
+            <span class="quick-tag tag-admin">POST &bull; ADMIN ONLY</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">POST /api/admin-item-delete.php</span> &rarr; <span class="fn-type">JSON { success, message }</span></div>
+            <div class="fn-desc">Parameters: <code>item_id</code>. Permanently deletes item and cascades to claims and activity logs.</div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>api/admin-user-role.php</span>
+            <span class="quick-tag tag-admin">POST &bull; ADMIN ONLY</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">POST /api/admin-user-role.php</span> &rarr; <span class="fn-type">JSON { success, message }</span></div>
+            <div class="fn-desc">Parameters: <code>user_id</code>, <code>role</code> ('user' / 'admin'). <strong>Prevents admin from demoting their own logged-in session.</strong></div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 6. CLIENT JAVASCRIPT FUNCTIONS -->
+    <!-- ========================================================================= -->
+    <div class="section-title">
+        <i class="fa-brands fa-js text-warning"></i> 6. Client-Side JavaScript (public/assets/js/)
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>public/assets/js/items.js</span>
+            <span class="badge bg-secondary">Catalog &amp; Item Events</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">filterItems</span>(): <span class="fn-type">void</span></div>
+            <div class="fn-desc">Reads search text, radio button, category &amp; status dropdowns and calls <code>$.getJSON(baseUrl + '/api/items.php')</code>, swapping grid HTML.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('#filter_query').on('input')</span> (250ms Debounce)</div>
+            <div class="fn-desc">Debounced listener: delays request while user is actively typing in the search box.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$(document).on('click', '.item-card')</span></div>
+            <div class="fn-desc">Whole-card click event handler: navigates to item specification page via <code>data-href</code>.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.status-toggle-btn').on('click')</span></div>
+            <div class="fn-desc">Single-click AJAX status change on <code>item-details.php</code>: posts to <code>api/update-status.php</code> and updates badge instantly.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('#claimSubmitForm').on('submit')</span></div>
+            <div class="fn-desc">Ownership claim submission: sends multipart <code>FormData</code> via <code>$.ajax</code> to <code>api/claims.php</code>.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.user-claim-decision-btn').on('click')</span></div>
+            <div class="fn-desc">Claim decision button for item reporters: prompts for optional note and sends AJAX POST to <code>api/admin-claim-action.php</code>.</div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>public/assets/js/admin.js</span>
+            <span class="badge bg-secondary">Admin Console Events</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('#claimFilterButtons button').on('click')</span></div>
+            <div class="fn-desc">Client-side instant row filtering on <code>admin/claims.php</code> by status (All, Pending, Approved, Rejected).</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.open-decision-modal-btn').on('click')</span></div>
+            <div class="fn-desc">Opens Bootstrap decision modal and pre-fills claim ID, claimant name, proof text, and notes.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.admin-submit-decision-btn').on('click')</span></div>
+            <div class="fn-desc">Sends Approve/Reject decision to <code>api/admin-claim-action.php</code> and updates row in-place.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.admin-status-select').on('change')</span></div>
+            <div class="fn-desc">In-place dropdown on <code>admin/items.php</code> that posts status change to <code>api/update-status.php</code>.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.admin-delete-item-btn').on('click')</span></div>
+            <div class="fn-desc">Prompts confirmation dialog and posts to <code>api/admin-item-delete.php</code>, fading out the deleted row.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.admin-role-select').on('change')</span></div>
+            <div class="fn-desc">Sends user role update to <code>api/admin-user-role.php</code> and changes badge color.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('#adminItemSearchInput').on('input')</span></div>
+            <div class="fn-desc">Instant client-side table filter for items table by typing.</div>
+        </div>
+    </div>
+
+    <div class="file-card function-card">
+        <div class="file-header">
+            <span class="file-path"><i class="fa-regular fa-file-code me-2"></i>public/assets/js/auth.js</span>
+            <span class="badge bg-secondary">Authentication Helpers</span>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.toggle-password-btn').on('click')</span></div>
+            <div class="fn-desc">Toggles password input between <code>'password'</code> and <code>'text'</code> with eye icon switch.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('#reg_password, #reg_confirm').on('input')</span></div>
+            <div class="fn-desc">Real-time password match validator on registration form with color-coded feedback text.</div>
+        </div>
+        <div class="function-item">
+            <div class="fn-signature"><span class="fn-name">$('.fill-demo-btn').on('click')</span></div>
+            <div class="fn-desc">One-click button that auto-fills demo credentials for Admin (<code>admin@campus.edu</code>) or Student (<code>student@campus.edu</code>).</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Interactive Live Filter Script -->
+<script>
+document.getElementById('directorySearch').addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    const items = document.querySelectorAll('.function-item');
+    const cards = document.querySelectorAll('.function-card');
+
+    if (query === '') {
+        items.forEach(el => el.style.display = '');
+        cards.forEach(card => card.style.display = '');
+        return;
+    }
+
+    cards.forEach(card => {
+        let cardHasMatch = false;
+        const filePath = card.querySelector('.file-path')?.textContent.toLowerCase() || '';
+        const className = card.querySelector('.class-badge')?.textContent.toLowerCase() || '';
+
+        if (filePath.includes(query) || className.includes(query)) {
+            cardHasMatch = true;
+            card.querySelectorAll('.function-item').forEach(el => el.style.display = '');
+        } else {
+            card.querySelectorAll('.function-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    item.style.display = '';
+                    cardHasMatch = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        card.style.display = cardHasMatch ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>
+

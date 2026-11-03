@@ -1,5 +1,17 @@
 <?php
-// layouts/header.php - Global Header & Navigation
+// layouts/header.php - Global HTML Head, Navigation Bar & Flash Alerts
+//
+// WHAT THIS FILE DOES:
+// 1. Starts the HTML5 document layout, imports Bootstrap 5.3.3, Font Awesome 6.5.1, and public/assets/css/style.css.
+// 2. Checks currentUser() to dynamically display:
+//    - For guests: "Sign In" and "Register" links.
+//    - For logged-in students: "Dashboard", user name, and "Logout".
+//    - For administrators: Gold "Admin" badge button, user name, and "Logout".
+// 3. Retrieves and renders any one-time session flash notifications (getFlash()) as dismissible Bootstrap alerts.
+//
+// HOW TO EXPLAIN TO PROFESSOR:
+// "The header provides a responsive navigation bar and standard branding across all pages.
+// It conditionally adapts navigation links based on user authentication and role."
 
 require_once __DIR__ . '/../config/app.php';
 

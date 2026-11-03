@@ -1,0 +1,429 @@
+================================================================================
+CAMPUS LOST-AND-FOUND PORTAL - COMPLETE FUNCTION & FILE DIRECTORY
+================================================================================
+Use Ctrl + F in your text editor to search any function name, file name, or topic!
+================================================================================
+
+TABLE OF CONTENTS:
+1. Global Helper Functions & Configuration (config/)
+2. Security & Middleware Classes (app/middleware/)
+3. Database Repositories (app/repositories/)
+4. Business Logic Controllers (app/controllers/)
+5. AJAX API Endpoints (api/)
+6. Frontend & Server Pages (root, admin/, student/)
+7. Client-Side JavaScript Functions (public/assets/js/)
+8. Quick Lookup: "Where is the code that does X?"
+
+================================================================================
+1. GLOBAL HELPER FUNCTIONS & CONFIGURATION
+================================================================================
+
+[FILE] config/database.php
+--------------------------------------------------------------------------------
+- loadEnv(string $path): void
+  * Purpose: Reads .env file line by line and sets environment variables via putenv() and $_ENV.
+  * Used by: database.php itself when loading DB_HOST, DB_NAME, DB_USER, DB_PASS, etc.
+
+- Database::getConnection(): PDO
+  * Purpose: Singleton design pattern. Creates and returns a single active PDO connection to PostgreSQL.
+  * Options set: PDO::ATTR_ERRMODE => ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false.
+  * Used by: All repositories (UserRepository, ItemRepository, ClaimRepository).
+
+
+[FILE] config/app.php
+--------------------------------------------------------------------------------
+- url(string $path = ''): string
+  * Purpose: Generates an absolute URL from a relative path (e.g. url('login.php') -> http://localhost/Lost-and-Found/login.php).
+
+- redirect(string $path): void
+  * Purpose: Sends HTTP Location header redirect and terminates script execution via exit.
+
+- setFlash(string $type, string $message): void
+  * Purpose: Stores a one-time alert notice in $_SESSION['flash'] (e.g. 'success', 'danger', 'warning').
+
+- getFlash(): ?array
+  * Purpose: Retrieves and unsets (clears) the current flash alert from session.
+  * Used in: layouts/header.php to render dismissible alert badges.
+
+- isLoggedIn(): bool
+  * Purpose: Returns true if $_SESSION['user_id'] is set and not empty.
+
+- isAdmin(): bool
+  * Purpose: Returns true if user is logged in AND $_SESSION['user_role'] === 'admin'.
+
+- currentUser(): ?array
+  * Purpose: Returns associative array with 'id', 'name', 'email', 'role' from $_SESSION, or null if guest.
+
+- sanitize($val): string
+  * Purpose: Wraps htmlspecialchars($val, ENT_QUOTES, 'UTF-8') to prevent XSS (Cross-Site Scripting).
+  * Used in: All HTML output templates and item cards.
+
+- isItemOwner(array $item, ?array $user = null): bool
+  * Purpose: Returns true if the logged-in user is the person who reported the item.
+  * Checks: item.user_id === user.id OR item.contact_email === user.email.
+
+- canManageItem(array $item, ?array $user = null): bool
+  * Purpose: Central authorization check. Returns true if user is an Admin OR the original reporter.
+  * Used in: item-details.php (to show status buttons & received claims desk) and api/update-status.php.
+
+- typeBadgeClass(string $type): string
+  * Purpose: Returns CSS badge classes for 'lost' (bg-danger) vs 'found' (bg-success).
+
+- statusBadgeClass(string $status): string
+  * Purpose: Returns CSS classes for 'Open' (badge-status-open), 'Claim Requested' (badge-status-claim-requested), or 'Resolved' (badge-status-resolved).
+
+- claimBadgeClass(string $status): string
+  * Purpose: Returns CSS badge class for claim decision: 'Approved' (bg-success), 'Rejected' (bg-danger), 'Pending' (bg-warning).
+
+- itemImageUrl($itemOrPath = null): string
+  * Purpose: Resolves uploaded item image path to full URL, or falls back to public/assets/img/placeholder.svg.
+
+
+[FILE] config/db.php
+--------------------------------------------------------------------------------
+- Simple backward-compatibility include wrapper pointing to config/database.php.
+
+
+================================================================================
+2. SECURITY & ROUTE MIDDLEWARE
+================================================================================
+
+[FILE] app/middleware/AuthMiddleware.php
+--------------------------------------------------------------------------------
+- AuthMiddleware::check(): void
+  * Purpose: Ensures user is logged in. If not, sets flash message and redirects to login.php.
+  * Used in: student/dashboard.php, student/my-reports.php, student/my-claims.php.
+
+- AuthMiddleware::guestOnly(): void
+  * Purpose: Ensures only non-logged-in visitors can access the page. If already logged in, redirects admin to admin/dashboard.php or student to student/dashboard.php.
+  * Used in: login.php, register.php.
+
+
+[FILE] app/middleware/AdminMiddleware.php
+--------------------------------------------------------------------------------
+- AdminMiddleware::check(): void
+  * Purpose: Ensures logged-in user has role 'admin'. If not, redirects to login.php with an error.
+  * Used in: admin/dashboard.php, admin/claims.php, admin/items.php, admin/users.php.
+
+
+================================================================================
+3. DATABASE REPOSITORIES (Raw SQL PDO Queries)
+================================================================================
+
+[FILE] app/repositories/UserRepository.php (Class: UserRepository)
+--------------------------------------------------------------------------------
+- __construct(?PDO $db = null)
+  * Initializes PDO connection via Database::getConnection().
+
+- findByEmail(string $email): ?array
+  * Query: SELECT * FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1
+  * Returns user record or null.
+
+- emailExists(string $email): bool
+  * Returns true if email already exists in users table.
+
+- findById(int $id): ?array
+  * Query: SELECT id, name, email, phone, role, created_at FROM users WHERE id = :id
+
+- create(string $name, string $email, string $password, ?string $phone = null): ?int
+  * Hashes password with password_hash(..., PASSWORD_BCRYPT).
+  * Query: INSERT INTO users (name, email, password_hash, phone, role) VALUES (...) RETURNING id
+  * Returns newly created user id.
+
+- updateRole(int $userId, string $newRole): bool
+  * Query: UPDATE users SET role = :role WHERE id = :id (allowed roles: 'user', 'admin').
+
+- getAll(int $limit = 100): array
+  * Query: SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC LIMIT :lim
+
+
+[FILE] app/repositories/ItemRepository.php (Class: ItemRepository)
+--------------------------------------------------------------------------------
+- __construct(?PDO $db = null)
+  * Initializes PDO connection.
+
+- getAllCategories(): array
+  * Query: SELECT * FROM categories ORDER BY name ASC
+
+- create(array $d): ?int
+  * Query: INSERT INTO items (item_type, title, category_id, location, event_date, description, image_url, status, user_id, contact_name, contact_email, contact_phone) VALUES (...) RETURNING id
+  * Logs "Created" entry into activity_logs automatically.
+
+- syncClaimRequestedItems(): void
+  * Query: Reverts items from 'Claim Requested' to 'Open' if they no longer have any 'Pending' claims.
+
+- searchAndFilter(array $f = []): array
+  * Builds dynamic SQL with ILIKE search (title, description, location), category filter, item_type filter, status filter, and sorting (newest, oldest, date_desc). Clamps limit between 1 and 200.
+
+- findById(int $id): ?array
+  * Query: SELECT i.*, c.name AS category_name, c.icon AS category_icon, u.name AS reporter_name, u.email AS reporter_email FROM items i JOIN categories c ... WHERE i.id = :id
+
+- updateStatus(int $id, string $status, string $remarks = ''): bool
+  * Query: UPDATE items SET status = :status, updated_at = CURRENT_TIMESTAMP WHERE id = :id
+  * Automatically writes a new record into activity_logs.
+
+- getByUserId(int $uid): array
+  * Query: Fetches all items reported by a specific student with a subquery counting claims.
+
+- getStats(): array
+  * Query: Aggregates counts using PostgreSQL FILTER clauses: total, total_lost, total_found, open, in_claim, total_resolved.
+
+- delete(int $id): bool
+  * Query: DELETE FROM items WHERE id = :id (foreign keys cascade to claims and activity_logs).
+
+- logActivity(int $id, string $action, string $details = ''): bool
+  * Query: INSERT INTO activity_logs (item_id, action, details) VALUES (:id, :action, :details)
+
+- getActivityLogs(int $id): array
+  * Query: SELECT * FROM activity_logs WHERE item_id = :id ORDER BY created_at DESC LIMIT 20
+
+
+[FILE] app/repositories/ClaimRepository.php (Class: ClaimRepository)
+--------------------------------------------------------------------------------
+- __construct(?PDO $db = null)
+  * Initializes PDO connection.
+
+- create(array $d): ?int
+  * Runs inside a DB transaction:
+    1. Inserts claim with status 'Pending'.
+    2. Updates parent item status to 'Claim Requested' (if currently 'Open').
+    3. Adds entry to activity_logs ('Claim Filed').
+  * Commits transaction and returns new claim id.
+
+- findById(int $id): ?array
+  * Query: Joins claims with items to retrieve claim details along with item's reporter info (item_user_id, item_contact_email).
+
+- getPendingCount(): int
+  * Query: SELECT COUNT(*) FROM claims WHERE status = 'Pending'
+
+- getByItemId(int $iid): array
+  * Query: SELECT * FROM claims WHERE item_id = :iid ORDER BY created_at DESC
+
+- getByUserEmail(string $email): array
+  * Query: SELECT c.*, i.title AS item_title FROM claims c JOIN items i ON c.item_id = i.id WHERE LOWER(c.claimant_email) = LOWER(:em)
+
+- getAll(int $limit = 100): array
+  * Query: Fetches claims for admin review desk with item titles.
+
+- updateClaimStatus(int $cid, string $status, string $notes = ''): bool
+  * Runs inside a DB transaction:
+    1. Updates claims table status to 'Approved' or 'Rejected', stores notes and sets resolved_at = CURRENT_TIMESTAMP.
+    2. If Approved: marks parent item status = 'Resolved' and logs 'Claim Approved'.
+    3. If Rejected: checks remaining pending claims; if none remain, reverts item back to 'Open' and logs 'Claim Rejected'.
+
+
+================================================================================
+4. BUSINESS LOGIC CONTROLLERS
+================================================================================
+
+[FILE] app/controllers/AuthController.php (Class: AuthController)
+--------------------------------------------------------------------------------
+- handleLogin(): array
+  * Reads $_POST['email'] and $_POST['password'].
+  * Calls UserRepository::findByEmail().
+  * Validates password via password_verify($password, $user['password_hash']).
+  * Calls session_regenerate_id(true) for session security.
+  * Populates $_SESSION (user_id, user_name, user_email, user_role).
+  * Redirects admins to admin/dashboard.php and students to student/dashboard.php.
+
+- handleRegister(): array
+  * Validates: name (>= 2 chars), email format, password (>= 6 chars), password confirmation match, uniqueness of email.
+  * Calls UserRepository::create().
+  * Automatically signs in new student and redirects to student/dashboard.php.
+
+- logout(): void
+  * Clears $_SESSION = [], destroys session via session_destroy(), redirects to login.php.
+
+
+[FILE] app/controllers/ItemController.php (Class: ItemController)
+--------------------------------------------------------------------------------
+- getCategories(): array
+  * Calls ItemRepository::getAllCategories().
+
+- getItem(int $id): ?array
+  * Calls ItemRepository::findById($id).
+
+- handleReportSubmission(): array
+  * Validates all form inputs (type, title >= 3 chars, category, location, event_date <= today, description >= 5 chars, contact info).
+  * Handles image upload to uploads/items/ with extension whitelist (jpg, jpeg, png, webp) and 5MB size limit.
+  * Generates random file name: 'item_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext.
+  * Calls ItemRepository::create().
+  * Redirects to item-details.php?id=... with success flash notice.
+
+- handleAjaxFilter(): void
+  * Reads GET query parameters (q, type, category, status, sort).
+  * Calls ItemRepository::searchAndFilter().
+  * Buffers HTML generation using renderItemCard().
+  * Sends JSON: { success: true, count: N, html: "..." }.
+
+- renderItemCard(array $item): void
+  * Echoes the responsive Bootstrap HTML card markup for a single item.
+
+
+================================================================================
+5. AJAX API ENDPOINTS (api/)
+================================================================================
+
+[FILE] api/items.php
+- Method: GET | Access: Public
+- Calls: ItemController::handleAjaxFilter()
+- Output: JSON { success, count, html }
+
+[FILE] api/update-status.php
+- Method: POST | Access: Signed-in (Reporter OR Admin only)
+- Parameters: item_id, status ('Open', 'Claim Requested', 'Resolved'), remarks (optional)
+- Calls: canManageItem(), ItemRepository::updateStatus()
+- Output: JSON { success, item_id, new_status, message }
+
+[FILE] api/claims.php
+- Method: POST | Access: Signed-in (Any user EXCEPT the item's reporter)
+- Parameters: item_id, claimant_name, claimant_email, claimant_phone, proof_description, proof_image (file)
+- Checks: isItemOwner($item) prevents reporter from claiming own item.
+- Saves optional proof photo to uploads/proofs/.
+- Calls: ClaimRepository::create()
+- Output: JSON { success, claim_id, message }
+
+[FILE] api/admin-claim-action.php (and alias api/claim-action.php)
+- Method: POST | Access: Signed-in (Item Reporter OR Admin)
+- Parameters: claim_id, decision ('Approved', 'Rejected'), admin_notes
+- Calls: ClaimRepository::updateClaimStatus()
+- Output: JSON { success, claim_id, item_id, item_status, decision, message }
+
+[FILE] api/admin-item-delete.php
+- Method: POST | Access: Admin only
+- Parameters: item_id
+- Calls: ItemRepository::delete($itemId)
+- Output: JSON { success, message }
+
+[FILE] api/admin-user-role.php
+- Method: POST | Access: Admin only
+- Parameters: user_id, role ('user', 'admin')
+- Safety: Prevents admin from demoting their own logged-in account.
+- Calls: UserRepository::updateRole()
+- Output: JSON { success, message }
+
+
+================================================================================
+6. WEB PAGES & USER INTERFACE
+================================================================================
+
+[FILE] index.php (Catalog & Live Search)
+- Calls: ItemController::getCategories(), ItemRepository::getStats(), ItemRepository::searchAndFilter(['limit' => 60]).
+- Renders: Search bar, Category dropdown, Type pills (All, Lost, Found), Status filter, initial 60 cards.
+- Scripts: public/assets/js/items.js
+
+[FILE] report-item.php (Item Reporting Form)
+- Calls: ItemController::handleReportSubmission() on POST.
+- Renders: Report form (lost/found radio, title, category, location, date, description, photo upload with client-side preview, contact details). Pre-fills student name and email if logged in.
+
+[FILE] item-details.php (Item Detail & Claim Desk)
+- Calls: ItemRepository::findById(), ClaimRepository::getByItemId(), ItemRepository::getActivityLogs().
+- Conditional rendering:
+  * If canManageItem() (Reporter or Admin): displays interactive Status Control toggle buttons AND Received Claims list with Accept/Reject buttons.
+  * If visitor/other student: displays "Submit Ownership Claim" button (opens claim modal). Reporter is blocked from seeing claim button.
+  * Audit Trail: Renders item's activity log entries.
+
+[FILE] login.php (Sign In)
+- Calls: AuthMiddleware::guestOnly(), AuthController::handleLogin() on POST.
+- Features: Quick 1-click demo login buttons for Admin (admin@campus.edu) and Student (student@campus.edu).
+
+[FILE] register.php (Student Registration)
+- Calls: AuthMiddleware::guestOnly(), AuthController::handleRegister() on POST.
+- Features: Live client-side password matching feedback.
+
+[FILE] logout.php (Sign Out)
+- Calls: AuthController::logout(). Clears session and redirects to login.php.
+
+[FILE] admin/dashboard.php
+- Calls: AdminMiddleware::check(), ItemRepository::getStats(), ClaimRepository::getAll(5).
+- Displays: Admin statistic counters (lost, found, pending claims, resolved) and latest 5 claims.
+
+[FILE] admin/claims.php
+- Calls: AdminMiddleware::check(), ClaimRepository::getAll(100).
+- Displays: Full claims desk table, status filter tabs (All, Pending, Approved, Rejected), Review Decision Modal.
+
+[FILE] admin/items.php
+- Calls: AdminMiddleware::check(), ItemRepository::searchAndFilter(['limit' => 200]).
+- Displays: Inventory management table, search filter, status dropdown, Delete button with confirmation.
+
+[FILE] admin/users.php
+- Calls: AdminMiddleware::check(), UserRepository::getAll(100).
+- Displays: User directory table, role dropdown (user/admin), protects current session row.
+
+[FILE] student/dashboard.php
+- Calls: AuthMiddleware::check(), ItemRepository::getByUserId(), ClaimRepository::getByUserEmail().
+- Displays: Student counters (items reported, claims filed, resolved items) and 4 most recent reports.
+
+[FILE] student/my-reports.php
+- Calls: AuthMiddleware::check(), ItemRepository::getByUserId().
+- Displays: List of items reported by the logged-in student, claim count badge, link to manage each item.
+
+[FILE] student/my-claims.php
+- Calls: AuthMiddleware::check(), ClaimRepository::getByUserEmail().
+- Displays: List of claims filed by the student, current claim status badge, proof description, resolution notes.
+
+[FILE] layouts/header.php
+- Renders: HTML <head>, Bootstrap 5 CSS, Font Awesome icons, style.css, sticky top navbar, user avatar/links, flash message alert bar.
+
+[FILE] layouts/footer.php
+- Renders: Footer bar, jQuery 3.7.1, Bootstrap 5 bundle JS, auth.js, and page-specific scripts ($extraScripts).
+
+
+================================================================================
+7. CLIENT-SIDE JAVASCRIPT (public/assets/js/)
+================================================================================
+
+[FILE] public/assets/js/items.js
+- filterItems(): Gathers filter inputs (q, type, category, status) and executes $.getJSON(baseUrl + '/api/items.php').
+- $('#filter_query').on('input'): 250ms debounced live search trigger.
+- $(document).on('click', '.item-card'): Whole-card click redirection to data-href.
+- $('.status-toggle-btn').on('click'): Sends AJAX POST to api/update-status.php and updates badge styling.
+- $('#claimSubmitForm').on('submit'): AJAX POST with FormData to api/claims.php.
+- $('.user-claim-decision-btn').on('click'): Prompts for optional note and sends AJAX POST to api/admin-claim-action.php.
+
+[FILE] public/assets/js/admin.js
+- $('#claimFilterButtons button').on('click'): Client-side table row filter by status.
+- $('.open-decision-modal-btn').on('click'): Populates and displays #decisionModal for reviewing claims.
+- $('.admin-submit-decision-btn').on('click'): Sends AJAX POST to api/admin-claim-action.php.
+- $('.admin-status-select').on('change'): In-place item status dropdown updating via api/update-status.php.
+- $('.admin-delete-item-btn').on('click'): Prompts confirmation and deletes item via api/admin-item-delete.php.
+- $('.admin-role-select').on('change'): Updates user role via api/admin-user-role.php.
+- $('#adminItemSearchInput').on('input'): Live client-side text filtering of admin items table.
+
+[FILE] public/assets/js/auth.js
+- $('.toggle-password-btn').on('click'): Toggles password input type between 'password' and 'text'.
+- $('#reg_password, #reg_confirm').on('input'): Live password match validation and message coloring.
+- $('.fill-demo-btn').on('click'): One-click prefill of login inputs with demo accounts.
+
+
+================================================================================
+8. QUICK LOOKUP: "WHERE IS THE CODE THAT DOES X?"
+================================================================================
+
+Q: Where are database credentials set?
+A: In `.env` at root, and loaded in `config/database.php`.
+
+Q: Where is SQL Injection prevented?
+A: In `config/database.php` (PDO native prepares) and prepared statements in `app/repositories/*.php`.
+
+Q: Where is XSS prevented?
+A: In `config/app.php` inside function `sanitize($val)`.
+
+Q: Where is the item card HTML defined?
+A: In `app/controllers/ItemController.php` inside method `renderItemCard()`.
+
+Q: Where are image uploads handled and validated?
+A: For items: in `app/controllers/ItemController.php` (method `handleReportSubmission()`).
+   For claim proofs: in `api/claims.php`.
+
+Q: Where are passwords hashed and checked?
+A: Hashed: in `app/repositories/UserRepository.php` (method `create()`).
+   Verified: in `app/controllers/AuthController.php` (method `handleLogin()`).
+
+Q: Where is the decision made to resolve an item when a claim is approved?
+A: In `app/repositories/ClaimRepository.php` inside method `updateClaimStatus()`.
+
+Q: Where are the status badge colors defined?
+A: In `config/app.php` inside function `statusBadgeClass()` and CSS classes in `public/assets/css/style.css`.
+================================================================================
+

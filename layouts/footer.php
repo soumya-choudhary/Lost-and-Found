@@ -1,5 +1,13 @@
 <?php
-// layouts/footer.php - Global Footer
+// layouts/footer.php - Global Page Footer & JavaScript Loader
+//
+// WHAT THIS FILE DOES:
+// 1. Closes the main HTML content wrapper `<main>`.
+// 2. Renders the copyright footer with dynamic year (`date('Y')`).
+// 3. Imports jQuery 3.7.1 and Bootstrap 5.3.3 JavaScript bundle.
+// 4. Imports public/assets/js/auth.js (for password toggle and demo buttons).
+// 5. Outputs any page-specific extra scripts passed via `$extraScripts` (e.g. items.js or admin.js).
+// 6. Closes the `<body>` and `<html>` tags.
 ?>
     </main>
 
